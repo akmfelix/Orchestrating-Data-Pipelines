@@ -32,11 +32,11 @@ A sense of wait for something to happen before moving to the next task.
 * timeout. which is defined to 7 days by default. It tells in seconds when your sensor times out and fails.
 
 In this example, we want to verify if the API is available or not. And for that we use the HTTP sensor.\
-As usual, you need to create a new variable. In this case, is_api_available and you add the HTTP sensor in order to check if URL active or not.\
-Then you specify task_id, always specify the task_id as 'is_api_available' as well.\
-The HTTP connection ID as you interact with an external service, in this case a URL, you need to define a connection as well as the website that you want to check.\
-Then last but not least, you have the endpoint API slash. So that's the path from the website that you want to check.\
-Finally add import airflow providers HTTP sensors.
+1. As usual, you need to create a new variable. In this case, is_api_available and you add the HTTP sensor in order to check if URL active or not.\
+2. Then you specify task_id, always specify the task_id as 'is_api_available' as well.\
+3. The HTTP connection ID as you interact with an external service, in this case a URL, you need to define a connection as well as the website that you want to check.\
+4. Then last but not least, you have the endpoint API slash. So that's the path from the website that you want to check.\
+5. Finally add import airflow providers HTTP sensors.
 ~~~
     is_api_available = HttpSensor (
         task_id = 'is_api_available',
