@@ -1,5 +1,9 @@
 # What is Airflow
-Apache Airflow is an open source platform to programmatically author, schedule and monitor workflows. The Workflows are you Data Pipelines.
+* Apache Airflow is an open source platform to programmatically author, schedule and monitor workflows. The Workflows are you Data Pipelines.
+* Airflow is an orchestrator, not a processing framework. Process your gigabytes of data outside of Airflow (i.e. You have a Spark cluster, you use an operator to execute a Spark job, and the data is processed in Spark).
+* A DAG is a data pipeline, an Operator is a task.
+* An Executor defines how your tasks are executed, whereas a worker is a process executing your task.
+* The Scheduler schedules your tasks, the web server serves the UI, and the database stores the metadata of Airflow.
 
 # Benefits
 * Everything is coded in Python and everrything is dynamic. 
@@ -18,9 +22,10 @@ Apache Airflow is an open source platform to programmatically author, schedule a
 * Worker. The worker is where your tasks are effectively executred.
 
 #  Core Concepts
-* DAG. A directed acyclic graph, 
-* Operators: 1) Action 2) Transfer 3) Sensor
-* Task / Task Instance
+* DAG. A directed acyclic graph. A graph that represents a data pipeline with tasks and directed dependicies.
+* Operators: 1) Action - Execute an action 2) Transfer - Transfer data 3) Sensor - Wait for a condition to be met.
+* Task / Task Instance. When a DAG runs, the scheduler creates a DAG Run for that specific run.
+
 
 ### Airflow not a data streaming solution neither a processeing framework.
 
@@ -77,4 +82,36 @@ docker-compose up -d
 # again
 ~~~
 -> If you see that airflow-init docker container has exited, that's normal :)
+
+# What is a docker
+Software development platform and a kind of virtualization technology that makes easy to develop and deploy apps inside packaged virtual containerized environments.
+
+## Docker compose file, docker containerz
+
+What is the best view to check the dependencies of your DAG?
+* Graph view
+What is the best view to monitoring the time it takes for your tasks to complete over many DAG Runs?
+* Landing Times
+What's the most useful view to detect bottlenecks in your DAG?
+* Gantt
+What view can you use to check if a modification you made is applied on your DAG or not?
+* Code
+What view is best to get the history of the states of your DAG Runs and Tasks?
+* Grid
+
+# Task
+create_table -> is_api_available -> extract_user -> process_user -> store_user
+
+
+
+
+
+
+
+
+
+
+
+
+
 
