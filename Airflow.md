@@ -35,6 +35,7 @@ Let's imagine that you have the following data pipeline with three tasks extract
 
 ### Executor
 Executor doesn't execute a task, but it defines how, and on which system your tasks are executed.\
+\
 In addition, you have a concept called executor and an executor defines how and on which support your tasks are executed. For example, if you have a Kubernetes cluster, you want to execute your tasks on this Kubernetes cluster, you will use the KubernetesExecutor. If you want to execute your tasks in a Celery cluster, Celery is a Python framework to execute multiple tasks on multiple machines, you will use the CeleryExecutor. Keep in mind that the executor doesn't execute any tasks. Now, if you use the CeleryExecutor for example, you will have two additional core components, a **queue**, and a **worker**.
 * Queue. In a queue your tasks will be pushed in it in order to execute them in the right order.
 * Worker. The worker is where your tasks are effectively executred.
@@ -54,6 +55,23 @@ First you create a new DAG, dag.py and you put that file into the folder DAGs. N
 Next, the Scheduler runs the DAG, and for that, it creates a DAG Run object with the state Running. Then it takes the first task to execute and that task becomes a task instance object. The task instance object has the state None and then Scheduled. After that the Scheduler sends the task instance object into the Queue of the Executor. Now the state of the task is Queued and the Executor creates a sub process to run the task, and now the task instance object has the state Running. Once the task is done, the state of the task is Success or Failed. It depends. And the Scheduler checks, if there is no tasks to execute.\
 \
 If the DAG is done in that case, the DAG Run has the state Success. And basically you can update the Airflow UI to check the states of both the DAG Run and the task instances of that DAG Run.
+
+## What should you keep in mind after what you've learned?
+* Airflow is an orchestrator, not a processing framework. Process your gigabytes of data outside of Airflow (i.e. You have a Spark cluster, you use an operator to execute a Spark job, and the data is processed in Spark).
+* A DAG is a data pipeline, an Operator is a task.
+* An Executor defines how your tasks are executed, whereas a worker is a process executing your task
+* The Scheduler schedules your tasks, the web server serves the UI, and the database stores the metadata of Airflow.
+
+## What-is-docker
+Docker is a software development platform and a kind of virtualization technology that makes it easy for us to develop and deploy apps inside packaged, virtual containerized environments, meaning apps run the same no matter where they are on what machine they are running on.\
+\
+Your app runs in the Docker container, and you can think of a Docker container as a little microcomputer with its own job isolated CPU processes, memory and network resources. Because of these, they can be easily added, removed, stopped or started again without affecting each other or the host machine.\
+\
+If you open the file Docker compose the HTML, that file describes the airflow instance and or services Docker containers it needs to run.
+~~~
+# in cmd promd
+docker-compose ps
+~~~
 
 # Sensors
 A sense of wait for something to happen before moving to the next task.
