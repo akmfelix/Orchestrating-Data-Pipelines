@@ -40,12 +40,20 @@ In addition, you have a concept called executor and an executor defines how and 
 * Worker. The worker is where your tasks are effectively executred.
 
 ## Single-Node-Architecture
-To run Airflow in production, you are not going to stay with a single node architecture. Indeed, you want to make sure that you don't have a single point of failure. You want to make sure that your architecture is highly available and you want to make sure that you're able to deal with the workload, with the number of tasks that you want to execute, and for that you need to use the multi nodes architecture. In this example, we use Celery, but that works with Kubernetes as well.
 ![alt single-node-architecture](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/single-node-architecture.jpg)
 
 ## Multi-Nodes-Architecture
-
+To run Airflow in production, you are not going to stay with a single node architecture. Indeed, you want to make sure that you don't have a single point of failure. You want to make sure that your architecture is highly available and you want to make sure that you're able to deal with the workload, with the number of tasks that you want to execute, and for that you need to use the multi nodes architecture. In this example, we use Celery, but that works with Kubernetes as well.
 ![alt multi-nodes-architecture](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/multi-nodes-architecture.jpg)
+
+## Execution-Flow
+So you have one node with the components, the Web server, the Meta database, the Scheduler, the Executor, and the folder dags.\
+\
+First you create a new DAG, dag.py and you put that file into the folder DAGs. Next, the Scheduler parses this folder dags every five minutes by default to detect new DAGs. So you may need to wait up to five minutes before getting your DAG on the Airflow UI. Next, whenever you apply a modification to that DAG you may need to wait up to 30 seconds before getting your modification.\
+\
+Next, the Scheduler runs the DAG, and for that, it creates a DAG Run object with the state Running. Then it takes the first task to execute and that task becomes a task instance object. The task instance object has the state None and then Scheduled. After that the Scheduler sends the task instance object into the Queue of the Executor. Now the state of the task is Queued and the Executor creates a sub process to run the task, and now the task instance object has the state Running. Once the task is done, the state of the task is Success or Failed. It depends. And the Scheduler checks, if there is no tasks to execute.\
+\
+If the DAG is done in that case, the DAG Run has the state Success. And basically you can update the Airflow UI to check the states of both the DAG Run and the task instances of that DAG Run.
 
 # Sensors
 A sense of wait for something to happen before moving to the next task.
