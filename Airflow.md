@@ -39,8 +39,13 @@ In addition, you have a concept called executor and an executor defines how and 
 * Queue. In a queue your tasks will be pushed in it in order to execute them in the right order.
 * Worker. The worker is where your tasks are effectively executred.
 
-## Architecture
+## Single-Node-Architecture
+To run Airflow in production, you are not going to stay with a single node architecture. Indeed, you want to make sure that you don't have a single point of failure. You want to make sure that your architecture is highly available and you want to make sure that you're able to deal with the workload, with the number of tasks that you want to execute, and for that you need to use the multi nodes architecture. In this example, we use Celery, but that works with Kubernetes as well.
 ![alt single-node-architecture](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/single-node-architecture.jpg)
+
+## Multi-Nodes-Architecture
+
+![alt multi-nodes-architecture](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/multi-nodes-architecture.jpg)
 
 # Sensors
 A sense of wait for something to happen before moving to the next task.
@@ -60,9 +65,6 @@ In this example, we want to verify if the API is available or not. And for that 
         endpoint = 'api/'
     )
 ~~~
-
-
-### Airflow not a data streaming solution neither a processeing framework.
 
 # Airflow installation
 ### Prerequisites
