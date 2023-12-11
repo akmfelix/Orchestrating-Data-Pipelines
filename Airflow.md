@@ -77,7 +77,7 @@ docker-compose ps
 A sense of wait for something to happen before moving to the next task.
 * poke_interval. which is defined to 60 seconds by default. So every 60 seconds sensors checks if the condition is true or not before executing the next task.
 * timeout. which is defined to 7 days by default. It tells in seconds when your sensor times out and fails.
-
+ 
 In this example, we want to verify if the API is available or not. And for that we use the HTTP sensor.\
 1. As usual, you need to create a new variable. In this case, is_api_available and you add the HTTP sensor in order to check if URL active or not.\
 2. Then you specify task_id, always specify the task_id as 'is_api_available' as well.\
@@ -165,6 +165,13 @@ create_table -> is_api_available -> extract_user -> process_user -> store_user
 from airflow import DAG
 from datetime import datetime
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.http.sensors.http import HttpSensor
+from airflow.providers.http.operators.http import SimpleHttpOperator
+from airflow.operators.python import PythonOperator
+
+from pandas import json_normalize
+
+import json
 
 with DAG(
     'user_processing', start_date = datetime(2023,12,1), schedule_interval='@daily', catchup=False
@@ -183,7 +190,20 @@ with DAG(
             );
         '''
     )
-
+    is_api_available = HttpSensor (
+        task_id = 'is_api_available',
+        http_conn_id = 'user_api',
+        endpoint = 'api/'
+    )
+    extract_user = SimpleHttpOperaotr(
+        task_id='extract_user',
+        http_conn_id='user_id',
+        endpoint='api/',
+        method='GET',
+        response_filter=lambda response: json.loads(response.text),
+        log_response=True
+    )
+    process_user
 ~~~
 ~~~
 # in terminal window
@@ -191,7 +211,8 @@ docker-compose ps
 # in order to run one-1 task from your DAG
 docker exec -it docker-airflow-airflow-scheduler-1 /bin/bash
 airflow -h
-airflow tasks test user_processing create_table 2023-01-01
+airflow tasks test user_processing create_table 2023-12-01
+# to exit airflow container hit ctrl+d
 ~~~
 
 
