@@ -1,10 +1,13 @@
 # What is Airflow
 * Apache Airflow is an open source platform to programmatically author, schedule and monitor workflows. The Workflows are you Data Pipelines.
 * Airflow is an orchestrator. It allows you to execute your tasks in the right way, in the right order at the right time.
-* Airflow is an orchestrator, not a processing framework. Process your gigabytes of data outside of Airflow (i.e. You have a Spark cluster, you use an operator to execute a Spark job, and the data is processed in Spark).
-* A DAG is a data pipeline, an Operator is a task.
 * An Executor defines how your tasks are executed, whereas a worker is a process executing your task.
 * The Scheduler schedules your tasks, the web server serves the UI, and the database stores the metadata of Airflow.
+
+## What-is-not-Airflow
+* Airflow is not a data streaming solution, neither a data processing framework.
+* Airflow is an orchestrator, not a processing framework. Process your gigabytes of data outside of Airflow (i.e. You have a Spark cluster, you use an operator to execute a Spark job, and the data is processed in Spark).
+* Instead, you should use Airflow as a way to trigger the tool that will process your data. For example, you have the SparkSubmitJobOperator, you could use that operator to process terabytes of data.
 
 ## Benefits
 * Everything is coded in Python and everything is dynamic. 
@@ -22,17 +25,18 @@ Let's imagine that you have the following data pipeline with three tasks extract
 * Metadatabase or Metastore. The metadatabase is nothing more than a database that is compatibale with SQL alchemy. For example Postgres, MySQL, Oracle, Sql server. In this database, you will have metadata related to your data, data pipelines, airflow users.
 * Triggerer. Allows to run specific kind of tasks.
 
+##  Core Concepts
+* DAG. A directed acyclic graph. A DAG means directed acyclic graph, and it's nothing more than a graph with nodes, directed edges and no cycles.
+* Operators. Think of operator as a task. There are 3 types of operator: 1) Action - Execute an action 2) Transfer - Transfer data 3) Sensor - Wait for a condition to be met.
+* A DAG is a data pipeline, an Operator is a task.
+* Task / Task Instance. When a DAG runs, the scheduler creates a DAG Run for that specific run.
+![alt what-is-dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-dag.jpg)
+![alt what-is-workflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-workflow.jpg)
+
 ### Executor
 In addition, you have a concept called executor and an executor defines how and on which support your tasks are executed. For example, if you have a Kubernetes cluster, you want to execute your tasks on this Kubernetes cluster, you will use the KubernetesExecutor. If you want to execute your tasks in a Celery cluster, Celery is a Python framework to execute multiple tasks on multiple machines, you will use the CeleryExecutor. Keep in mind that the executor doesn't execute any tasks. Now, if you use the CeleryExecutor for example, you will have two additional core components, a **queue**, and a **worker**.
 * Queue. In a queue your tasks will be pushed in it in order to execute them in the right order.
 * Worker. The worker is where your tasks are effectively executred.
-
-#  Core Concepts
-* DAG. A directed acyclic graph. A DAG means directed acyclic graph, and it's nothing more than a graph with nodes, directed edges and no cycles.
-* Operators. Think of operator as a task. There are 3 types of operator: 1) Action - Execute an action 2) Transfer - Transfer data 3) Sensor - Wait for a condition to be met.
-* Task / Task Instance. When a DAG runs, the scheduler creates a DAG Run for that specific run.
-![alt what-is-dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-dag.jpg)
-![alt what-is-workflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-workflow.jpg)
 
 # Sensors
 A sense of wait for something to happen before moving to the next task.
