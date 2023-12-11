@@ -5,6 +5,8 @@
 * An Executor defines how your tasks are executed, whereas a worker is a process executing your task.
 * The Scheduler schedules your tasks, the web server serves the UI, and the database stores the metadata of Airflow.
 
+
+
 # Benefits
 * Everything is coded in Python and everrything is dynamic. 
 * Scalabale. You can execute as many tasks as you want with Airflow.
