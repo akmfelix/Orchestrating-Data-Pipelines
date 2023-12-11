@@ -146,11 +146,8 @@ docker-compose up -d
 ~~~
 -> If you see that airflow-init docker container has exited, that's normal :)
 
-# What is a docker
-Software development platform and a kind of virtualization technology that makes easy to develop and deploy apps inside packaged virtual containerized environments.
 
-## Docker compose file, docker containerz
-
+### Airflow UI
 What is the best view to check the dependencies of your DAG?
 * Graph view
 What is the best view to monitoring the time it takes for your tasks to complete over many DAG Runs?
@@ -162,9 +159,8 @@ What view can you use to check if a modification you made is applied on your DAG
 What view is best to get the history of the states of your DAG Runs and Tasks?
 * Grid
 
-# Task
+### Task
 create_table -> is_api_available -> extract_user -> process_user -> store_user
-
 ~~~
 from airflow import DAG
 from datetime import datetime
