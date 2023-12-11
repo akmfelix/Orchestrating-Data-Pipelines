@@ -14,7 +14,7 @@
 
 ## Why-do-we-need-airflow
 Let's imagine that you have the following data pipeline with three tasks extract, load and transform, and it runs every day at 10:00 PM. Very simple. Obviously at every step you are going to interact with an external tool or an external system, for example, an API for extract. Snowflake for load, and DBT for transform. Now, what if the API is not available anymore? Or what if you have a error in Snowflake or what if you made a mistake in your transformations with DBT. As you can see at every step, you can end up with a failure and you need to have a tool that manages this. Also, what if instead of having one data pipeline, you have hundreds of data pipelines. As you can imagine, it's gonna be a nightmare for you, and this is why you need Airflow. With Airflow you are able to manage failures automatically, even if you have hundreds of data pipelines and millions of tasks.
-![alt why-do-we-need-airflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/why-do-we-need-airflow.jpg)
+![alt what-is-dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-dag.jpg)
 
 ## Core Components
 * Web Server. The web server is a flask Python web server, that allows to access to user interface.
@@ -29,9 +29,10 @@ In addition, you have a concept called executor and an executor defines how and 
 
 #  Core Concepts
 * DAG. A directed acyclic graph. A DAG means directed acyclic graph, and it's nothing more than a graph with nodes, directed edges and no cycles.
-* Operators: 1) Action - Execute an action 2) Transfer - Transfer data 3) Sensor - Wait for a condition to be met.
+* Operators. Think of operator as a task. There are 3 types of operator: 1) Action - Execute an action 2) Transfer - Transfer data 3) Sensor - Wait for a condition to be met.
 * Task / Task Instance. When a DAG runs, the scheduler creates a DAG Run for that specific run.
-![alt why-do-we-need-airflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/why-do-we-need-airflow.jpg)
+![alt what-is-dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-dag.jpg)
+![alt what-is-workflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-workflow.jpg)
 
 # Sensors
 A sense of wait for something to happen before moving to the next task.
