@@ -6,8 +6,8 @@
 * The Scheduler schedules your tasks, the web server serves the UI, and the database stores the metadata of Airflow.
 
 
-![alt text](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/why-do-we-need-airflow.jpg)
-![alt text](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/why-do-we-need-airflow.jpg?raw=true)
+![alt why-do-we-need-airflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/why-do-we-need-airflow.jpg)
+
 
 # Benefits
 * Everything is coded in Python and everrything is dynamic. 
