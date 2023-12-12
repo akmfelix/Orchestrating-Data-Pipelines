@@ -159,6 +159,17 @@ What view can you use to check if a modification you made is applied on your DAG
 What view is best to get the history of the states of your DAG Runs and Tasks?
 * Grid
 
+## Hook
+With a Hook you can interact with many tools.\
+\
+Let's imagine that you have the operator and you want to execute a SQL request to a PostgreSQL database. With the postgres operator, you can execute a SQL request, but behind the scene a postgres HOOK is used and the goal of the Postgres hook is to obstruct all the complexity of interacting with a Postgres database.\
+\
+So keep in mind, whenever you interact with an external tool or an external service, you have a Hook behind the scene that abstracts the complexity of interacting with that tool or service. You have the attributes hook, you have the postgres hook, you have the MySQL hook and the list goes on.\
+\
+I strongly advise you to always take a look at the hook as you may have access to some methods that you don't have access to from the operator.\
+\
+A hook allows you to easily interact with an external tool or an external service.
+
 ### Task
 create_table -> is_api_available -> extract_user -> process_user -> store_user
 ~~~
@@ -168,10 +179,29 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.http.operators.http import SimpleHttpOperator
 from airflow.operators.python import PythonOperator
-
-from pandas import json_normalize
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 import json
+from pandas import json_normalize
+
+def _process_user(ti):
+    user = ti.xcom_pill(task_ids='extract_user')
+    user=user['results'][0]
+    processed_user=json_normalize({
+        'firstname': user['name']['first'],
+        'lastname':user['name']['last'],
+        'country':user['location']['country'],
+        'username':user['login']['username'],
+        'password':user['login']['password'],
+        'email':user['email']})
+    processed_user.to_csv('/tmp/processed_user.csv', index=None, header=False)
+
+def _store_user():
+    hook = PostgresHook(postgres_conn_id='postgres')
+    hook.copy_expert(
+        sql="COPY user FROM stdin WITH DELIMETER as ','",
+        filename='/tmp/processed_user.csv'
+    )
 
 with DAG(
     'user_processing', start_date = datetime(2023,12,1), schedule_interval='@daily', catchup=False
@@ -203,7 +233,16 @@ with DAG(
         response_filter=lambda response: json.loads(response.text),
         log_response=True
     )
-    process_user
+    process_user = PythonOperator(
+        task_id='process_user',
+        python_callable=_process_user
+    )
+    store_user = PythonOperator(
+        task_id='store_user',
+        python_callable=_store_user
+    )
+    
+    extract_user>>process_user
 ~~~
 ~~~
 # in terminal window
