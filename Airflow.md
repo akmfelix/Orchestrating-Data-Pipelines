@@ -30,6 +30,12 @@ Let's imagine that you have the following data pipeline with three tasks extract
 * Operators. Think of operator as a task. There are 3 types of operator: 1) Action - Execute an action 2) Transfer - Transfer data 3) Sensor - Wait for a condition to be met.
 * A DAG is a data pipeline, an Operator is a task.
 * Task / Task Instance. When a DAG runs, the scheduler creates a DAG Run for that specific run.
+* What is a DAG: a collection of all the tasks you want to run, organised in a way that reflects their relationships and dependencies with no cycles.
+* What is the meaning of the schedule_interval property for a DAG: It defines how often a DAG should be run from the start_date+schedule_time.
+* What is an operator: an operator describes a single task in a workflow.
+* What does a Sensor: it is a long running task waiting for an event to happen. A poke function is called every n seconds to check if the criteria are met.
+* Let's assume a DAG start_date to the 28/10/2021:10:00:00 PM UTC and the DAG is turned on at 10:30:00 PM UTC with a schedule_interval of */10 * * * * (After every 10 minutes). How many DagRuns are going to be executed? 2
+* 
 ![alt what-is-dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-dag.jpg)
 ![alt what-is-workflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-workflow.jpg)
 
@@ -173,76 +179,80 @@ A hook allows you to easily interact with an external tool or an external servic
 ### Task
 create_table -> is_api_available -> extract_user -> process_user -> store_user
 ~~~
-from airflow import DAG
-from datetime import datetime
-from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.providers.http.sensors.http import HttpSensor
-from airflow.providers.http.operators.http import SimpleHttpOperator
-from airflow.operators.python import PythonOperator
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-
-import json
-from pandas import json_normalize
-
-def _process_user(ti):
-    user = ti.xcom_pill(task_ids='extract_user')
-    user=user['results'][0]
-    processed_user=json_normalize({
-        'firstname': user['name']['first'],
-        'lastname':user['name']['last'],
-        'country':user['location']['country'],
-        'username':user['login']['username'],
-        'password':user['login']['password'],
-        'email':user['email']})
-    processed_user.to_csv('/tmp/processed_user.csv', index=None, header=False)
-
-def _store_user():
-    hook = PostgresHook(postgres_conn_id='postgres')
-    hook.copy_expert(
-        sql="COPY user FROM stdin WITH DELIMETER as ','",
-        filename='/tmp/processed_user.csv'
-    )
-
-with DAG(
-    'user_processing', start_date = datetime(2023,12,1), schedule_interval='@daily', catchup=False
-) as dag:
-    create_table = PostgresOperator (
-        task_id = 'create_table',
-        postgres_conn_id = 'postgres',
-        sql = '''
-            CREATE TABLE IF NOT EXISTS users (
-                firstname TEXT NOT NULL,
-                lastname TEXT NOT NULL,
-                country TEXT NOT NULL,
-                username TEXT NOT NULL,
-                password TEXT NOT NULL,
-                email TEXT NOT NULL
-            );
-        '''
-    )
-    is_api_available = HttpSensor (
-        task_id = 'is_api_available',
-        http_conn_id = 'user_api',
-        endpoint = 'api/'
-    )
-    extract_user = SimpleHttpOperaotr(
-        task_id='extract_user',
-        http_conn_id='user_id',
-        endpoint='api/',
-        method='GET',
-        response_filter=lambda response: json.loads(response.text),
-        log_response=True
-    )
-    process_user = PythonOperator(
-        task_id='process_user',
-        python_callable=_process_user
-    )
-    store_user = PythonOperator(
-        task_id='store_user',
-        python_callable=_store_user
-    )
-    
-    extract_user>>process_user
+    from airflow import DAG
+    from airflow.providers.postgres.operators.postgres import PostgresOperator
+    from airflow.providers.http.sensors.http import HttpSensor
+    from airflow.providers.http.operators.http import SimpleHttpOperator
+    from airflow.operators.python import PythonOperator
+    from airflow.providers.postgres.hooks.postgres import PostgresHook
+     
+    import json
+    from pandas import json_normalize
+    from datetime import datetime
+     
+    def _process_user(ti):
+        user = ti.xcom_pull(task_ids="extract_user")
+        user = user['results'][0]
+        processed_user = json_normalize({
+            'firstname': user['name']['first'],
+            'lastname': user['name']['last'],
+            'country': user['location']['country'],
+            'username': user['login']['username'],
+            'password': user['login']['password'],
+            'email': user['email'] })
+        processed_user.to_csv('/tmp/processed_user.csv', index=None, header=False)
+     
+    def _store_user():
+        hook = PostgresHook(postgres_conn_id='postgres')
+        hook.copy_expert(
+            sql="COPY users FROM stdin WITH DELIMITER as ','",
+            filename='/tmp/processed_user.csv'
+        )
+     
+    with DAG('user_processing', start_date=datetime(2022, 1, 1), 
+            schedule_interval='@daily', catchup=False) as dag:
+     
+        create_table = PostgresOperator(
+            task_id='create_table',
+            postgres_conn_id='postgres',
+            sql='''
+                CREATE TABLE IF NOT EXISTS users (
+                    firstname TEXT NOT NULL,
+                    lastname TEXT NOT NULL,
+                    country TEXT NOT NULL,
+                    username TEXT NOT NULL,
+                    password TEXT NOT NULL,
+                    email TEXT NOT NULL
+                );
+            '''
+        )
+     
+        is_api_available = HttpSensor(
+            task_id='is_api_available',
+            http_conn_id='user_api',
+            endpoint='api/'
+        )
+     
+        extract_user = SimpleHttpOperator(
+            task_id='extract_user',
+            http_conn_id='user_api',
+            endpoint='api/',
+            method='GET',
+            response_filter=lambda response: json.loads(response.text),
+            log_response=True
+        )
+     
+        process_user = PythonOperator(
+            task_id='process_user',
+            python_callable=_process_user
+        )
+     
+        store_user = PythonOperator(
+            task_id='store_user',
+            python_callable=_store_user
+        )
+     
+        create_table >> is_api_available >> extract_user >> process_user >> store_user
 ~~~
 ~~~
 # in terminal window
@@ -255,6 +265,8 @@ airflow tasks test user_processing create_table 2023-12-01
 ~~~
 
 
+
+# Section 5 The new way of scheduling DAGs
 
 
 
