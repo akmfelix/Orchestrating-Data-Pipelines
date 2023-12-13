@@ -444,3 +444,35 @@ So for example, here it runs T1 one, then once T2 is completed, it runs to T3. T
 \
 To configure this executor, you just need to modify the executor setting with the sequential executor value.
 ![alt SequentialExecutor](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/SequentialExecutor.jpg)
+
+### The Local executor
+The local executor is one step further than the sequential executor, as it allows you to execute multiple tasks at the same time, but on a single machine. \
+\
+It means that you end up with the same airflow instance, but with a different database. In this time we are going to use either PostgreSQL, my SQL, Oracle DB or whatever you want, but not the SQL database. And by doing so you are able to execute multiple tasks at the same time.\
+\
+So for example, the scheduler runs T1 and once it is completed, T2 and T3 run at the same time. Once they are completed, it runs to four and you are done to configure this executable. To define:
+~~~
+executor=LocalExecutor
+sql_alchemy_conn = postgresql+psycopg2://<user>:<password>@<host>/<db>
+~~~
+
+### Celery executor
+The Celery executor is nice to start sketching out the number of tasks that you can execute at the same time.\
+\
+How? By using a Celery cluster in order to execute your tasks on multiple machines.\
+\
+So first, you still have the web server, the scheduler and the metadata database of airflow with Postgres. But as you can see, you have additional components. The first one is the workers. Indeed, you have airflow workers, which are nothing more than machines in charge of executing your tasks.\
+\
+So in this case, you have three workers, so three machines to execute your tasks. If you need more resources to execute more tasks, you just need to add a new airflow worker and that's it.\
+\
+Now the Celery Queue is composed of two things the Result Back End, where the airflow workers store the status of the tasks that have been executed and the Broker, which is nothing more than a queue where the scheduler sends the task to execute and the workers pull the tasks out of that queue to execute them.\
+\
+![alt celery](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/celery.jpg)
+
+You need to install the Celery queue which may be redis or rabbit in queue.
+~~~
+executor = CeleryExecutor
+sql_alchemy_conn=postgresql+psycopg2://<user>:<password>@<host>/<db>
+celery_result_backend=postgresql+psycopg2://<user>:<password>@<host>/<db>
+celery_broker_url=redis://:@redis:6379/0
+~~~
