@@ -398,4 +398,4 @@ with DAG(
             print(f.read())
     read_dataset()
 ~~~
-![alt file-trigger](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/file-trigger.jpg)
+![alt file-trigger](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/file_trigger.jpg)
