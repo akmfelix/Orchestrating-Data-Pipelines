@@ -399,3 +399,48 @@ with DAG(
     read_dataset()
 ~~~
 ![alt file-trigger](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/file_trigger.jpg)
+
+### Dataset trigger limitations
+Datasets are amazing, but they have limitations as well:
+* DAGs can only use Datasets in the same Airflow instance. A DAG cannot wait for a Dataset defined in another Airflow instance.
+* Consumer DAGs are triggered every time a task that updates datasets completes successfully. Airflow doesn't check whether the data has been effectively updated.
+* You can't combine different schedules like datasets with cron expressions.
+* If two tasks update the same dataset, as soon as one is done, that triggers the Consumer DAG immediately without waiting for the second task to complete.
+* Airflow monitors datasets only within the context of DAGs and Tasks. If an external tool updates the actual data represented by a Dataset, Airflow has no way of knowing that.
+
+# Databases and Executors
+
+## Executor
+Executor defines how to run your tasks on which system. And basically you have many different executors that you can use. They are local executors and remote executors.\
+\
+For example:
+* You have the local executor to run multiple tasks on a single machine.
+* You have the sequential executor to run one task at a time on a single machine.
+* And you have the remote executors like the self executor to execute your tasks on the celery cluster on multiple machines.
+* And you have the communities executor to run your tasks on a Kubernetes cluster, same thing on multiple machines in multiple pods.
+
+The only thing that you need to change is the executor parameter in the configuration file of airflow.\
+\
+To copy the configuration file of airflow from the container to the host to your machine.
+~~~
+docker cp docker-airflow-airflow-scheduler-1:/opt/airflow/airflow.cfg .
+~~~
+
+We have this environment variable with the CeleryExecutor, this overrides the value of the SequentialExecutor corresponding to the parameter executor.
+~~~
+in airflow.cfg and docker-compose.yaml
+AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+executor = SequentialExecutor
+~~~
+
+### SequentialExecutor
+The sequential executor is the executor by default when you install airflow manually. \
+\
+How does it work?\
+\
+You have a web server, a scheduler and a database, a SQLite database. And if you want to run the following, DAG, the scheduler runs one task at a time. You are not able to run multiple tasks at the same time.\
+\
+So for example, here it runs T1 one, then once T2 is completed, it runs to T3. Then once it is completed, it runs to four.\
+\
+To configure this executor, you just need to modify the executor setting with the sequential executor value.
+![alt SequentialExecutor](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/SequentialExecutor.jpg)
