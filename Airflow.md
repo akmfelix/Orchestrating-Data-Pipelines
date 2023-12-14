@@ -455,6 +455,7 @@ So for example, the scheduler runs T1 and once it is completed, T2 and T3 run at
 executor=LocalExecutor
 sql_alchemy_conn = postgresql+psycopg2://<user>:<password>@<host>/<db>
 ~~~
+* What is the main limitation of SQLite? It can accept only one writer at a time.
 
 ### Celery executor
 The Celery executor is nice to start sketching out the number of tasks that you can execute at the same time.\
@@ -476,3 +477,123 @@ sql_alchemy_conn=postgresql+psycopg2://<user>:<password>@<host>/<db>
 celery_result_backend=postgresql+psycopg2://<user>:<password>@<host>/<db>
 celery_broker_url=redis://:@redis:6379/0
 ~~~
+
+### parallel_dag.py
+
+~~~
+    from airflow import DAG
+    from airflow.operators.bash import BashOperator
+     
+    from datetime import datetime
+     
+    with DAG('parallel_dag', start_date=datetime(2022, 1, 1), 
+        schedule_interval='@daily', catchup=False) as dag:
+     
+        extract_a = BashOperator(
+            task_id='extract_a',
+            bash_command='sleep 1'
+        )
+     
+        extract_b = BashOperator(
+            task_id='extract_b',
+            bash_command='sleep 1'
+        )
+     
+        load_a = BashOperator(
+            task_id='load_a',
+            bash_command='sleep 1'
+        )
+     
+        load_b = BashOperator(
+            task_id='load_b',
+            bash_command='sleep 1'
+        )
+     
+        transform = BashOperator(
+            task_id='transform',
+            bash_command='sleep 1'
+        )
+     
+        extract_a >> load_a
+        extract_b >> load_b
+        [load_a, load_b] >> transform
+~~~
+
+## Flower
+~~~
+docker-compose --profile flower up -d
+~~~
+
+## Remove DAG examples
+* Open the file docker-compose.yaml
+* Replace the value 'true' by 'false' for the AIRFLOW__CORE__LOAD_EXAMPLES environment variables
+* Restart Airflow by typing **docker-compose down** && **docker-compose up -d**
+* Once it's done, go back to localhost:8080
+
+## What is a ques
+With queues you are able to distribute your tasks among multiple machines according to the specificities of your tasks and your machines.
+![alt ques](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/ques.jpg)
+
+## Add a new Celery Worker
+~~~
+# add in docker-compose.yaml
+  airflow-worker-2:
+    <<: *airflow-common
+    command: celery worker
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    environment:
+      <<: *airflow-common-env
+      # Required to handle warm shutdown of the celery workers properly
+      # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
+      DUMB_INIT_SETSID: "0"
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully   
+~~~
+
+## Creating a new queue
+Creating a queue in airflow is very simple. You just need to specify to the command cell.\
+For exxample: celery worker -q for_example
+
+~~~
+  airflow-worker-2:
+    <<: *airflow-common
+    command: celery worker -q high_cpu
+  ...
+~~~
+
+## Send a task to specific queue
+Add paramater to a task queue='for_example'
+~~~
+...
+    transform = BashOperator(
+        task_id='transform',
+        queue='high_cpu',
+        bash_command='sleep 1'
+    )
+...
+~~~
+You are able to add a new celery worker, you are able to create a queue and attach that queue to a specific worker, which is very useful if you have a resource consuming task that you want to send to a specific worker with more resources than the others.
+
+## Concurrency, the parameters you must know!
+Airflow has several parameters to tune your tasks and DAGs concurrency.\
+\
+Concurrency defines the number of tasks and DAG Runs that you can execute at the same time (in parallel)\
+\
+*Starting from the configuration settings*/
+**parallelism / AIRFLOW__CORE__PARALELISM**/
+This defines the maximum number of task instances that can run in Airflow per scheduler. By default, you can execute up to 32 tasks at the same time. If you have 2 schedulers: 2 x 32 = 64 tasks.What value to define here depends on the resources you have and the number of schedulers running./
+/
+**max_active_tasks_per_dag / AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG**/
+This defines the maximum number of task instances allowed to run concurrently in each DAG. By default, you can execute up to 16 tasks at the same time for a given DAG across all DAG Runs./
+/
+**max_active_runs_per_dag / AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG**/
+This defines the maximum number of active DAG runs per DAG. By default, you can have up to 16 DAG runs per DAG running at the same time.
