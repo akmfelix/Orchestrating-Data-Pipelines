@@ -4,6 +4,12 @@
 * An Executor defines how your tasks are executed, whereas a worker is a process executing your task.
 * The Scheduler schedules your tasks, the web server serves the UI, and the database stores the metadata of Airflow.
 
+## Core Components of Airflow
+* Web Server. The web server is a flask Python web server, that allows to access to user interface.
+* Scheduler. Schedulling tasks and data pipelines.
+* Metadatabase or Metastore. The metadatabase is nothing more than a database that is compatibale with SQL alchemy. For example Postgres, MySQL, Oracle, Sql server. In this database, you will have metadata related to your data, data pipelines, airflow users.
+* Triggerer. Allows to run specific kind of tasks.
+
 ## What-is-not-Airflow
 * Airflow is not a data streaming solution, neither a data processing framework.
 * Airflow is an orchestrator, not a processing framework. Process your gigabytes of data outside of Airflow (i.e. You have a Spark cluster, you use an operator to execute a Spark job, and the data is processed in Spark).
@@ -18,12 +24,6 @@
 ## Why-do-we-need-airflow
 Let's imagine that you have the following data pipeline with three tasks extract, load and transform, and it runs every day at 10:00 PM. Very simple. Obviously at every step you are going to interact with an external tool or an external system, for example, an API for extract. Snowflake for load, and DBT for transform. Now, what if the API is not available anymore? Or what if you have a error in Snowflake or what if you made a mistake in your transformations with DBT. As you can see at every step, you can end up with a failure and you need to have a tool that manages this. Also, what if instead of having one data pipeline, you have hundreds of data pipelines. As you can imagine, it's gonna be a nightmare for you, and this is why you need Airflow. With Airflow you are able to manage failures automatically, even if you have hundreds of data pipelines and millions of tasks.
 ![alt why-do-we-need-airflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/why-do-we-need-airflow.jpg)
-
-## Core Components of Airflow
-* Web Server. The web server is a flask Python web server, that allows to access to user interface.
-* Scheduler. Schedulling tasks and data pipelines.
-* Metadatabase or Metastore. The metadatabase is nothing more than a database that is compatibale with SQL alchemy. For example Postgres, MySQL, Oracle, Sql server. In this database, you will have metadata related to your data, data pipelines, airflow users.
-* Triggerer. Allows to run specific kind of tasks.
 
 ##  1. Core Concepts. DAG. Operators. Task.
 ### DAG. First DAG
