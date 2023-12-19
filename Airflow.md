@@ -25,8 +25,8 @@
 Let's imagine that you have the following data pipeline with three tasks extract, load and transform, and it runs every day at 10:00 PM. Very simple. Obviously at every step you are going to interact with an external tool or an external system, for example, an API for extract. Snowflake for load, and DBT for transform. Now, what if the API is not available anymore? Or what if you have a error in Snowflake or what if you made a mistake in your transformations with DBT. As you can see at every step, you can end up with a failure and you need to have a tool that manages this. Also, what if instead of having one data pipeline, you have hundreds of data pipelines. As you can imagine, it's gonna be a nightmare for you, and this is why you need Airflow. With Airflow you are able to manage failures automatically, even if you have hundreds of data pipelines and millions of tasks.
 ![alt why-do-we-need-airflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/why-do-we-need-airflow.jpg)
 
-##  1. Core Concepts. DAG. Operators. Task.
-### DAG. First DAG
+#  1. Core Concepts. DAG. Operators. Task.
+## DAG. First DAG
 A DAG means directed acyclic graph, and it's nothing more than a graph with nodes (tasks), directed edges (dependency) and no cycles.
  1. Create python file in a DAG folder.
  2. from airflow import DAG - this is how airflow knows, that it's a DAG file.
@@ -38,24 +38,14 @@ A DAG means directed acyclic graph, and it's nothing more than a graph with node
 from airflow import DAG
 ~~~
  
-
-### Operators
+## Operators
 * Operators. Think of operator as a task. There are 3 types of operator: 1) Action - Execute an action. For example, the PythonOperator executes a Python function, the BashOperator executes a bash command. 2) Transfer - Transfer data. Basically Transfer operator allows you to transfer data from a point A to point B. 3) Sensor - Wait for a condition to be met. Sensors are very useful because they allow you to wait for something to happen. For example, you are waiting for files you will use the FileSensor.
 * A DAG is a data pipeline, an Operator is a task.
 * Task / Task Instance. An Operator is a task and when you run an operator, you get a task instance.
 * Finally, if you group all of those concepts together, you end up with the concept of workflow where you have your Operators, directed dependencies, and so a DAG, and that gives you the concept of workflow.
 * Let's assume a DAG start_date to the 28/10/2021:10:00:00 PM UTC and the DAG is turned on at 10:30:00 PM UTC with a schedule_interval of */10 * * * * (After every 10 minutes). How many DagRuns are going to be executed? 2
 
-### Questions
-* What is a DAG: a collection of all the tasks you want to run, organised in a way that reflects their relationships and dependencies with no cycles.
-* What is the meaning of the schedule_interval property for a DAG: It defines how often a DAG should be run from the start_date+schedule_time.
-* What is an operator: an operator describes a single task in a workflow.
-* What does a Sensor: it is a long running task waiting for an event to happen. A poke function is called every n seconds to check if the criteria are met.
-
-![alt what-is-dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-dag.jpg)
-![alt what-is-workflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-workflow.jpg)
-
-### Executor
+## Executor
 Executor doesn't execute a task, but it defines how, and on which system your tasks are executed. In addition, you have a concept called executor and an executor defines how and on which support your tasks are executed. For example, if you have a Kubernetes cluster, you want to execute your tasks on this Kubernetes cluster, you will use the KubernetesExecutor. If you want to execute your tasks in a Celery cluster, Celery is a Python framework to execute multiple tasks on multiple machines, you will use the CeleryExecutor. Keep in mind that the executor doesn't execute any tasks. Now, if you use the CeleryExecutor for example, you will have two additional core components, a **queue**, and a **worker**.
 * Queue. In a queue your tasks will be pushed in it in order to execute them in the right order.
 * Worker. The worker is where your tasks are effectively executred.
@@ -84,16 +74,14 @@ If the DAG is done in that case, the DAG Run has the state Success. And basicall
 * An Executor defines how your tasks are executed, whereas a worker is a process executing your task
 * The Scheduler schedules your tasks, the web server serves the UI, and the database stores the metadata of Airflow.
 
-## What-is-docker
-Docker is a software development platform and a kind of virtualization technology that makes it easy for us to develop and deploy apps inside packaged, virtual containerized environments, meaning apps run the same no matter where they are on what machine they are running on.\
-\
-Your app runs in the Docker container, and you can think of a Docker container as a little microcomputer with its own job isolated CPU processes, memory and network resources. Because of these, they can be easily added, removed, stopped or started again without affecting each other or the host machine.\
-\
-If you open the file Docker compose the HTML, that file describes the airflow instance and or services Docker containers it needs to run.
-~~~
-# in cmd promd
-docker-compose ps
-~~~
+### Questions
+* What is a DAG: a collection of all the tasks you want to run, organised in a way that reflects their relationships and dependencies with no cycles.
+* What is the meaning of the schedule_interval property for a DAG: It defines how often a DAG should be run from the start_date+schedule_time.
+* What is an operator: an operator describes a single task in a workflow.
+* What does a Sensor: it is a long running task waiting for an event to happen. A poke function is called every n seconds to check if the criteria are met.
+
+![alt what-is-dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-dag.jpg)
+![alt what-is-workflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-workflow.jpg)
 
 # Sensors
 A sense of wait for something to happen before moving to the next task.
@@ -115,6 +103,18 @@ In this example, we want to verify if the API is available or not. And for that 
 ~~~
 
 # Airflow installation
+
+## What-is-docker
+Docker is a software development platform and a kind of virtualization technology that makes it easy for us to develop and deploy apps inside packaged, virtual containerized environments, meaning apps run the same no matter where they are on what machine they are running on.\
+\
+Your app runs in the Docker container, and you can think of a Docker container as a little microcomputer with its own job isolated CPU processes, memory and network resources. Because of these, they can be easily added, removed, stopped or started again without affecting each other or the host machine.\
+\
+If you open the file Docker compose the HTML, that file describes the airflow instance and or services Docker containers it needs to run.
+~~~
+# in cmd promd
+docker-compose ps
+~~~
+
 ### Prerequisites
 First, make sure you have installed Docker Desktop and Visual Studio. If not, take a look at these links:
 * Get Docker
