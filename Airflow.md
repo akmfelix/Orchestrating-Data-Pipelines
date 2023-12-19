@@ -56,9 +56,7 @@ from airflow import DAG
 ![alt what-is-workflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-workflow.jpg)
 
 ### Executor
-Executor doesn't execute a task, but it defines how, and on which system your tasks are executed.\
-\
-In addition, you have a concept called executor and an executor defines how and on which support your tasks are executed. For example, if you have a Kubernetes cluster, you want to execute your tasks on this Kubernetes cluster, you will use the KubernetesExecutor. If you want to execute your tasks in a Celery cluster, Celery is a Python framework to execute multiple tasks on multiple machines, you will use the CeleryExecutor. Keep in mind that the executor doesn't execute any tasks. Now, if you use the CeleryExecutor for example, you will have two additional core components, a **queue**, and a **worker**.
+Executor doesn't execute a task, but it defines how, and on which system your tasks are executed. In addition, you have a concept called executor and an executor defines how and on which support your tasks are executed. For example, if you have a Kubernetes cluster, you want to execute your tasks on this Kubernetes cluster, you will use the KubernetesExecutor. If you want to execute your tasks in a Celery cluster, Celery is a Python framework to execute multiple tasks on multiple machines, you will use the CeleryExecutor. Keep in mind that the executor doesn't execute any tasks. Now, if you use the CeleryExecutor for example, you will have two additional core components, a **queue**, and a **worker**.
 * Queue. In a queue your tasks will be pushed in it in order to execute them in the right order.
 * Worker. The worker is where your tasks are effectively executred.
 
