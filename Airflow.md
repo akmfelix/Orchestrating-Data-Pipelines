@@ -34,8 +34,6 @@ A DAG means directed acyclic graph, and it's nothing more than a graph with node
  4. Then you need to define the start date. And the start date defines the date at which your DAG starts being scheduled.
  5. Once you have the start date, you need to define the schedule_interval, the frequency at which your DAG is triggered once every day, every 15 minutes, once a week and so on. Keep in mind that the schedule_interval is defined as a chronic expression. So behind the '@daily' you have a chron expression.
  6. Set 'catchup=False'. Because by default the catch parameter is set to true. And it means that if between now and the start date your DAG hasn't been triggered, then as soon as you start scheduling your data pipeline from the airflow, you are going to catchup.
-
-So behind the daily you have a crown expression.
 ~~~
 from airflow import DAG
 ~~~
