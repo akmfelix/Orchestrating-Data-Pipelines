@@ -40,15 +40,18 @@ from airflow import DAG
  
 
 ### Operators
-* Operators. Think of operator as a task. There are 3 types of operator: 1) Action - Execute an action 2) Transfer - Transfer data 3) Sensor - Wait for a condition to be met.
+* Operators. Think of operator as a task. There are 3 types of operator: 1) Action - Execute an action. For example, the PythonOperator executes a Python function, the BashOperator executes a bash command. 2) Transfer - Transfer data. Basically Transfer operator allows you to transfer data from a point A to point B. 3) Sensor - Wait for a condition to be met. Sensors are very useful because they allow you to wait for something to happen. For example, you are waiting for files you will use the FileSensor.
 * A DAG is a data pipeline, an Operator is a task.
-* Task / Task Instance. When a DAG runs, the scheduler creates a DAG Run for that specific run.
+* Task / Task Instance. An Operator is a task and when you run an operator, you get a task instance.
+* Finally, if you group all of those concepts together, you end up with the concept of workflow where you have your Operators, directed dependencies, and so a DAG, and that gives you the concept of workflow.
+* Let's assume a DAG start_date to the 28/10/2021:10:00:00 PM UTC and the DAG is turned on at 10:30:00 PM UTC with a schedule_interval of */10 * * * * (After every 10 minutes). How many DagRuns are going to be executed? 2
+
+### Questions
 * What is a DAG: a collection of all the tasks you want to run, organised in a way that reflects their relationships and dependencies with no cycles.
 * What is the meaning of the schedule_interval property for a DAG: It defines how often a DAG should be run from the start_date+schedule_time.
 * What is an operator: an operator describes a single task in a workflow.
 * What does a Sensor: it is a long running task waiting for an event to happen. A poke function is called every n seconds to check if the criteria are met.
-* Let's assume a DAG start_date to the 28/10/2021:10:00:00 PM UTC and the DAG is turned on at 10:30:00 PM UTC with a schedule_interval of */10 * * * * (After every 10 minutes). How many DagRuns are going to be executed? 2
-* 
+
 ![alt what-is-dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-dag.jpg)
 ![alt what-is-workflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-workflow.jpg)
 
