@@ -102,73 +102,6 @@ In this example, we want to verify if the API is available or not. And for that 
     )
 ~~~
 
-# Airflow installation
-
-## What-is-docker
-Docker is a software development platform and a kind of virtualization technology that makes it easy for us to develop and deploy apps inside packaged, virtual containerized environments, meaning apps run the same no matter where they are on what machine they are running on.\
-\
-Your app runs in the Docker container, and you can think of a Docker container as a little microcomputer with its own job isolated CPU processes, memory and network resources. Because of these, they can be easily added, removed, stopped or started again without affecting each other or the host machine.\
-\
-If you open the file Docker compose the HTML, that file describes the airflow instance and or services Docker containers it needs to run.
-~~~
-# in cmd promd
-docker-compose ps
-~~~
-
-### Prerequisites
-First, make sure you have installed Docker Desktop and Visual Studio. If not, take a look at these links:
-* Get Docker
-* Get Visual Studio Code
-
-Docker needs privilege rights to work, make sure you have them.\
-
-### Install Apache Airflow with Docker
-* Create a folder materials in your Documents
-* In this folder, download the following file: docker compose file
-* If you right-click on the file and save it, you will end up with docker-compose.yaml.txt. Remove the .txt and keep docker-compose.yaml
-* Open your terminal or CMD and go into Documents/materials
-* Open Visual Studio Code by typing the command: "code ."
-* Right click below docker-compose.yml and create a new file .env (don't forget the dot before env)
-* In this file add the following lines:
-~~~
-AIRFLOW_IMAGE_NAME=apache/airflow:2.4.2
-AIRFLOW_UID=50000
-~~~
-and save the file
-* Go at the top bar of Visual Studio Code -> Terminal -> New Terminal
-* n your new terminal at the bottom of Visual Studio Code, type the command "docker-compose up -d" and hit ENTER
-* You will see many lines scrolled, wait until it's done. Docker is downloading Airflow to run it. It can take up to 5 mins depending on your connection. If Docker raises an error saying it can't download the docker image, ensure you are not behind a proxy/vpn or corporate network. You may need to use your personal connection to make it work.
-* Open your web browser and go to "localhost:8080"
-
-### Troubleshoots
--> If you don't see this page, make sure you have nothing already running on the port 8080\
-\
-Also, go back to your terminal on Visual Studio Code and check your application with docker-compose ps\
-\
-All of your "containers" should be healthy.\
-\
-If a container is not healthy. You can check the logs with 
-~~~
-docker logs materials_name_of_the_container
-~~~
-Try to spot the error; once you fix it, restart Airflow with
-~~~
-docker-compose down
-# then 
-docker-compose up -d
-~~~
-and wait until your container states move from starting to healthy.
--> If you see this error
-remove your volumes with 
-~~~
-docker volume prune 
-# and run 
-docker-compose up -d 
-# again
-~~~
--> If you see that airflow-init docker container has exited, that's normal :)
-
-
 ### Airflow UI
 What is the best view to check the dependencies of your DAG?
 * Graph view
@@ -317,15 +250,7 @@ with DAG(
      
         create_table >> is_api_available >> extract_user >> process_user >> store_user
 ~~~
-~~~
-# in terminal window
-docker-compose ps
-# in order to run one-1 task from your DAG
-docker exec -it docker-airflow-airflow-scheduler-1 /bin/bash
-airflow -h
-airflow tasks test user_processing create_table 2023-12-01
-# to exit airflow container hit ctrl+d
-~~~
+
 
 
 
@@ -660,3 +585,87 @@ This defines the maximum number of task instances allowed to run concurrently in
 /
 **max_active_runs_per_dag / AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG**/
 This defines the maximum number of active DAG runs per DAG. By default, you can have up to 16 DAG runs per DAG running at the same time.
+
+
+
+
+==================================================================================================
+==================================================================================================
+# Airflow installation
+## What-is-docker
+Docker is a software development platform and a kind of virtualization technology that makes it easy for us to develop and deploy apps inside packaged, virtual containerized environments, meaning apps run the same no matter where they are on what machine they are running on.\
+\
+Your app runs in the Docker container, and you can think of a Docker container as a little microcomputer with its own job isolated CPU processes, memory and network resources. Because of these, they can be easily added, removed, stopped or started again without affecting each other or the host machine.\
+\
+If you open the file Docker compose the HTML, that file describes the airflow instance and or services Docker containers it needs to run.
+~~~
+# in cmd promd
+docker-compose ps
+~~~
+
+### Prerequisites
+First, make sure you have installed Docker Desktop and Visual Studio. If not, take a look at these links:
+* Get Docker
+* Get Visual Studio Code
+
+Docker needs privilege rights to work, make sure you have them.\
+
+### Install Apache Airflow with Docker
+* Create a folder materials in your Documents
+* In this folder, download the following file: docker compose file
+* If you right-click on the file and save it, you will end up with docker-compose.yaml.txt. Remove the .txt and keep docker-compose.yaml
+* Open your terminal or CMD and go into Documents/materials
+* Open Visual Studio Code by typing the command: "code ."
+* Right click below docker-compose.yml and create a new file .env (don't forget the dot before env)
+* In this file add the following lines:
+~~~
+AIRFLOW_IMAGE_NAME=apache/airflow:2.4.2
+AIRFLOW_UID=50000
+~~~
+and save the file
+* Go at the top bar of Visual Studio Code -> Terminal -> New Terminal
+* n your new terminal at the bottom of Visual Studio Code, type the command "docker-compose up -d" and hit ENTER
+* You will see many lines scrolled, wait until it's done. Docker is downloading Airflow to run it. It can take up to 5 mins depending on your connection. If Docker raises an error saying it can't download the docker image, ensure you are not behind a proxy/vpn or corporate network. You may need to use your personal connection to make it work.
+* Open your web browser and go to "localhost:8080"
+
+### Troubleshoots
+-> If you don't see this page, make sure you have nothing already running on the port 8080\
+\
+Also, go back to your terminal on Visual Studio Code and check your application with docker-compose ps\
+\
+All of your "containers" should be healthy.\
+\
+If a container is not healthy. You can check the logs with 
+~~~
+docker logs materials_name_of_the_container
+~~~
+Try to spot the error; once you fix it, restart Airflow with
+~~~
+docker-compose down
+# then 
+docker-compose up -d
+~~~
+and wait until your container states move from starting to healthy.
+-> If you see this error
+remove your volumes with 
+~~~
+docker volume prune 
+# and run 
+docker-compose up -d 
+# again
+~~~
+-> If you see that airflow-init docker container has exited, that's normal :)
+
+# To run individual task from terminal window
+~~~
+# in terminal window
+docker-compose ps
+# in order to run one-1 task from your DAG
+# type scheduler name of container
+# now you are inside of docker container 
+docker exec -it docker-airflow-airflow-scheduler-1 /bin/bash
+airflow -h
+# dag_id, task_id
+airflow tasks test user_processing create_table 2023-12-01
+# to exit airflow container hit ctrl+d
+~~~
