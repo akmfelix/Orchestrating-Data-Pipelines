@@ -192,8 +192,55 @@ I strongly advise you to always take a look at the hook as you may have access t
 \
 A hook allows you to easily interact with an external tool or an external service.
 
-### Task
+# Task
 create_table -> is_api_available -> extract_user -> process_user -> store_user
+### 1 Instantiate DAG object
+with DAG
+~~~
+from airflow import DAG
+from datetime import datetime
+
+with DAG(
+    dag_id='user_processing',
+    start_date=datetime(2023, 12, 20),
+    schedule_interval='@daily',
+    catchup=False
+) as dag:
+    None
+~~~
+
+### 2 Create Table
+We are going to use the postgres operator in order to execute a SQL request against a database and create a table.\
+Whenever you want to use an operator, you need to import the corresponding operator and for the Postgres operator it is **from airflow.providers.postgres.operators.postgres import PostgresOperator**
+~~~
+from airflow import DAG
+
+from datetime import datetime
+
+from airflow.providers.postgres.operators.postgres import PostgresOperator
+
+with DAG(
+    dag_id='user_processing',
+    start_date=datetime(2023,1,1),
+    schedule_interval='@daily',
+    catchup=False
+) as dag:
+    create_table=PostgresOperator(
+        task_id='create_table',
+        postgres_conn_id='postgres',
+        sql='''
+            CREATE TABLE IF NOT EXISTS user (
+                firstname TEXT NOT NULL,
+                lastname TEXT NOT NULL,
+                country TEXT NOT NULL,
+                username TEXT NOT NULL,
+                password TEXT NOT NULL,
+                email TEXT NOT NULL
+            );
+        '''        
+    )
+~~~
+
 ~~~
     from airflow import DAG
     from airflow.providers.postgres.operators.postgres import PostgresOperator
