@@ -105,15 +105,16 @@ In this example, we want to verify if the API is available or not. And for that 
 ~~~
 
 ## 6 Hook
-With a Hook you can interact with many tools.\
+With a airflow, you can interact with many tools and to make sure that it is easy for you to interact with the tool, there is the concept of Hook.\
 \
-Let's imagine that you have the operator and you want to execute a SQL request to a PostgreSQL database. With the postgres operator, you can execute a SQL request, but behind the scene a postgres HOOK is used and the goal of the Postgres hook is to obstruct all the complexity of interacting with a Postgres database.\
+Let's imagine that you have the operator and you want to execute a SQL request to a PostgreSQL database. With the PostgresOperator, you can execute a SQL request, but behind the scene a postgres HOOK is used and the goal of the PostgresHook is to obstruct all the complexity of interacting with a Postgres database.\
 \
-So keep in mind, whenever you interact with an external tool or an external service, you have a Hook behind the scene that abstracts the complexity of interacting with that tool or service. You have the attributes hook, you have the postgres hook, you have the MySQL hook and the list goes on.\
+So keep in mind, whenever you interact with an external tool or an external service, you have a Hook behind the scene that abstracts the complexity of interacting with that tool or service. You have the AWS hook, you have the Postgres hook, you have the MySQL hook and the list goes on.\
 \
 I strongly advise you to always take a look at the hook as you may have access to some methods that you don't have access to from the operator.\
 \
-A hook allows you to easily interact with an external tool or an external service.
+A hook allows you to easily interact with an external tool or an external service.\
+Keep in mind the method copy_expert doesn't exist from the PostgreOperator. You need to use the PostgresHook for that and that's why I always recommend you to take a look at the hook in order to see what methods you can use.
 
 # 7 Task
 create_table -> is_api_available -> extract_user -> process_user -> store_user
@@ -132,7 +133,7 @@ with DAG(
     None
 ~~~
 
-### 2 Create Table
+### 2 Create Table. SQL
 We are going to use the postgres operator in order to execute a SQL request against a database and create a table.\
 Whenever you want to use an operator, you need to import the corresponding operator and for the Postgres operator it is **from airflow.providers.postgres.operators.postgres import PostgresOperator**
 ~~~
@@ -154,7 +155,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
     )
 ~~~
 
-### 3 Sensors
+### 3 Sensors. HttpSensor
 In this case, we want to verify if the API is available or not and for that we use the HTTP sensor.
 ~~~
 from airflow.providers.http.sensors.http import HttpSensor
@@ -166,7 +167,7 @@ from airflow.providers.http.sensors.http import HttpSensor
     )
 ~~~
 
-### 4 Extract data from API
+### 4 Extract data from API. SimpleHttpOperator
 It's time to extract the data from API and for this we are going to use the SimpleHttpOperator.\
 method='GET' to request data.\
 response_filter=lambda response: json.loads(response.text) to extract data and transform it in json format. And for this we can define lambda, python function in a way that loads the response, the text into a json.\
@@ -184,83 +185,151 @@ import json
     )
 ~~~
 
+### 5 Process user. PythonOperator
+PythonOperator allows to use python operators
+~~~
+from airflow.operators.python import PythonOperator
+from pandas import json_normalize
+...
+def _process_user(ti):
+    user = ti.xcom_pull(task_ids='extract_user')
+    user = user['results'][0]
+    processed_user = json_normalize({
+        'firstname':user['name']['first'],
+        'lastname':user['name']['last'],
+        'country':user['location']['country'],
+        'username':user['login']['username'],
+        'password':user['login']['password'],
+        'email':user['email'] }
+    )
+    processed_user.to_csv('myfolder/processed_user.csv', index=None, header=False)
+...
+    process_user=PythonOperator(
+        task_id='process_user',
+        python_callable=_process_user
+    )
+~~~
 
+### 6 Store procced user. PostgresHook
+A hook allows you to easily interact with an external tool or an external service.
 ~~~
-    from airflow import DAG
-    from airflow.providers.postgres.operators.postgres import PostgresOperator
-    from airflow.providers.http.sensors.http import HttpSensor
-    from airflow.providers.http.operators.http import SimpleHttpOperator
-    from airflow.operators.python import PythonOperator
-    from airflow.providers.postgres.hooks.postgres import PostgresHook
-     
-    import json
-    from pandas import json_normalize
-    from datetime import datetime
-     
-    def _process_user(ti):
-        user = ti.xcom_pull(task_ids="extract_user")
-        user = user['results'][0]
-        processed_user = json_normalize({
-            'firstname': user['name']['first'],
-            'lastname': user['name']['last'],
-            'country': user['location']['country'],
-            'username': user['login']['username'],
-            'password': user['login']['password'],
-            'email': user['email'] })
-        processed_user.to_csv('/tmp/processed_user.csv', index=None, header=False)
-     
-    def _store_user():
-        hook = PostgresHook(postgres_conn_id='postgres')
-        hook.copy_expert(
-            sql="COPY users FROM stdin WITH DELIMITER as ','",
-            filename='/tmp/processed_user.csv'
-        )
-     
-    with DAG('user_processing', start_date=datetime(2022, 1, 1), 
-            schedule_interval='@daily', catchup=False) as dag:
-     
-        create_table = PostgresOperator(
-            task_id='create_table',
-            postgres_conn_id='postgres',
-            sql='''
-                CREATE TABLE IF NOT EXISTS users (
-                    firstname TEXT NOT NULL,
-                    lastname TEXT NOT NULL,
-                    country TEXT NOT NULL,
-                    username TEXT NOT NULL,
-                    password TEXT NOT NULL,
-                    email TEXT NOT NULL
-                );
-            '''
-        )
-     
-        is_api_available = HttpSensor(
-            task_id='is_api_available',
-            http_conn_id='user_api',
-            endpoint='api/'
-        )
-     
-        extract_user = SimpleHttpOperator(
-            task_id='extract_user',
-            http_conn_id='user_api',
-            endpoint='api/',
-            method='GET',
-            response_filter=lambda response: json.loads(response.text),
-            log_response=True
-        )
-     
-        process_user = PythonOperator(
-            task_id='process_user',
-            python_callable=_process_user
-        )
-     
-        store_user = PythonOperator(
-            task_id='store_user',
-            python_callable=_store_user
-        )
-     
-        create_table >> is_api_available >> extract_user >> process_user >> store_user
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+...
+def _store_user():
+    hook = PostgresHook(postgres_conn_id='postgres')
+    hook.copy_expert(
+        sql="COPY users FROM stdin WITH DELIMITER as ','",
+        filename='/tmp/processed_user.csv'
+    )
+...
+    store_user = PythonOperator(
+        task_id='store_user',
+        python_callable=_store_user
+    )
 ~~~
+
+### 7 The whole code
+~~~
+from airflow import DAG
+from datetime import datetime
+
+from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.http.sensors.http import HttpSensor
+from airflow.providers.http.operators.http import SimpleHttpOperator
+from airflow.operators.python import PythonOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+import json
+from pandas import json_normalize
+
+# The task to run
+def _store_user():
+    hook = PostgresHook(postgres_conn_id='postgres')
+    hook.copy_expert(
+        sql="COPY users FROM stdin WITH DELIMITER as ','",
+        filename='/tmp/processed_user.csv'
+    )
+
+def _process_user(ti):
+    user = ti.xcom_pull(task_ids="extract_user")
+    user = user['results'][0]
+    processed_user = json_normalize({
+        'firstname': user['name']['first'],
+        'lastname': user['name']['last'],
+        'country': user['location']['country'],
+        'username': user['login']['username'],
+        'password': user['login']['password'],
+        'email': user['email'] })
+    processed_user.to_csv('/tmp/processed_user.csv', index=None, header=False)  
+    
+with DAG(
+    dag_id="user_processing",
+    start_date=datetime(2023, 1, 1),
+    schedule_interval="@daily",
+    catchup=False
+) as dag:
+    
+    create_table = PostgresOperator(
+        task_id='create_table',
+        postgres_conn_id='postgres',
+        sql='''
+            CREATE TABLE IF NOT EXISTS users (
+                firstname TEXT NOT NULL,
+                lastname TEXT NOT NULL,
+                country TEXT NOT NULL,
+                username TEXT NOT NULL,
+                password TEXT NOT NULL,
+                email TEXT NOT NULL
+            );
+        ''')
+        
+    is_api_available = HttpSensor(
+        task_id='is_api_available',
+        http_conn_id='user_api',
+        endpoint='api/'
+    )
+    
+    extract_user = SimpleHttpOperator(
+        task_id='extract_user',
+        http_conn_id='user_api',
+        endpoint='api/',
+        method='GET',
+        response_filter=lambda response: json.loads(response.text),
+        log_response=True
+    )
+    
+    process_user = PythonOperator(
+        task_id='process_user',
+        python_callable=_process_user
+    )
+    
+    store_user = PythonOperator(
+        task_id='store_user',
+        python_callable=_store_user
+    )
+    
+    extract_user >> process_user
+~~~
+
+### 8 To see uploaded data into table in docker
+~~~
+docker-compose ps
+# Type name of the worker container
+docker exec -it docker-airflow-worker_1 /bin/bash
+# in docker container type (you got processed_user.csv)
+ls /tmp/
+
+# container name of database
+docker exec -it docker-airflow_postgres_1 /bin/bash/
+# in a container type
+psql -Uairflow
+# then
+select * from users;
+~~~
+
+
+
+
 
 
 
