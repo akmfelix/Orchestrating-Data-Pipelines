@@ -116,9 +116,28 @@ I strongly advise you to always take a look at the hook as you may have access t
 A hook allows you to easily interact with an external tool or an external service.\
 Keep in mind the method copy_expert doesn't exist from the PostgreOperator. You need to use the PostgresHook for that and that's why I always recommend you to take a look at the hook in order to see what methods you can use.
 
-# 7 Task
+## 7 DAG scheduling
+* start_date: defines the date at which your DAG starts being scheduled.
+* schedule_interval: how often a DAG runs.
+* end_date: the timestamp from which a DAG ends.
+* a DAG is triggered AFTER tje start_date/last_run + the schedule_interval
+* Your DAG is effectively triggered after the start date or the last time your dag was triggered, plus the schedule_interval.
+![alt dag_schedule](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/dag_schedule.jpg)
+
+## 8 Catchup/ Backfill mechanisms
+* The catchup mechanism allows you to automatically run non trigger dag runs between the last time your DAG was triggered and the date of now.
+* The backfilling mechanism allows to run historical DAG runs.
+
+# 9 Task
 create_table -> is_api_available -> extract_user -> process_user -> store_user
-### 1 Instantiate DAG object
+* Define a Data Pipeline
+* Execute a SQL request with the PostgresOperator
+* Execute a Python function with the PythonOperator
+* Execute an HTTP request against an API
+* Wait for something to happen with Sensors
+* Use Hooks to access secret methods
+* Exchange data between tasks
+### 9.1 Instantiate DAG object
 with DAG
 ~~~
 from airflow import DAG
@@ -133,7 +152,7 @@ with DAG(
     None
 ~~~
 
-### 2 Create Table. SQL
+### 9.2 Create Table. SQL
 We are going to use the postgres operator in order to execute a SQL request against a database and create a table.\
 Whenever you want to use an operator, you need to import the corresponding operator and for the Postgres operator it is **from airflow.providers.postgres.operators.postgres import PostgresOperator**
 ~~~
@@ -155,7 +174,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
     )
 ~~~
 
-### 3 Sensors. HttpSensor
+### 9.3 Sensors. HttpSensor
 In this case, we want to verify if the API is available or not and for that we use the HTTP sensor.
 ~~~
 from airflow.providers.http.sensors.http import HttpSensor
@@ -167,7 +186,7 @@ from airflow.providers.http.sensors.http import HttpSensor
     )
 ~~~
 
-### 4 Extract data from API. SimpleHttpOperator
+### 9.4 Extract data from API. SimpleHttpOperator
 It's time to extract the data from API and for this we are going to use the SimpleHttpOperator.\
 method='GET' to request data.\
 response_filter=lambda response: json.loads(response.text) to extract data and transform it in json format. And for this we can define lambda, python function in a way that loads the response, the text into a json.\
@@ -185,7 +204,7 @@ import json
     )
 ~~~
 
-### 5 Process user. PythonOperator
+### 9.5 Process user. PythonOperator
 PythonOperator allows to use python operators
 ~~~
 from airflow.operators.python import PythonOperator
@@ -210,7 +229,7 @@ def _process_user(ti):
     )
 ~~~
 
-### 6 Store procced user. PostgresHook
+### 9.6 Store procced user. PostgresHook
 A hook allows you to easily interact with an external tool or an external service.
 ~~~
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -228,7 +247,7 @@ def _store_user():
     )
 ~~~
 
-### 7 The whole code
+### 9.7 The whole code
 ~~~
 from airflow import DAG
 from datetime import datetime
@@ -311,34 +330,26 @@ with DAG(
     extract_user >> process_user
 ~~~
 
-### 8 To see uploaded data into table in docker
-~~~
-docker-compose ps
-# Type name of the worker container
-docker exec -it docker-airflow-worker_1 /bin/bash
-# in docker container type (you got processed_user.csv)
-ls /tmp/
-
-# container name of database
-docker exec -it docker-airflow_postgres_1 /bin/bash/
-# in a container type
-psql -Uairflow
-# then
-select * from users;
-~~~
-
-
-
-
-
-
-
-
-# Section 5 The new way of scheduling DAGs
-The dataset is just a group of data. Think of it as a file, as a SQL table, as anything that has data, and you must define a URI.
+# 10 New AIRFLOW feature of scheduling
+# 10.1 New way of SCheduling
+Before Airflow ver 2 'TriggerDag operator or the external tasks sensor, the TriggerDag one operator allows you to trigger knows or DAG from a DAG, whereas the external task sensor allows you to wait for a task in another DAG before moving forward. That being said, those two operators are pretty complex to use.'\
+After Airflow ver 2. With a new way of scheduling your DAGs, it's much easier to wait for data to exist in order to trigger another DAG.\
+When you make an update to a dataset to some data from a DAG that triggers another DAG. 
+* You can trigger your DAGs based on data updates.
 ![alt ex1](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/ex1.jpg)
+~~~
+# Schedule before 2.4
+with DAG(schedule_interval='@daily')
+OR
+With DAG(timetable=MyTimeTable)
 
-## Dataset
+# since 2.4
+with DAG(schedule=mydataset)
+# in a schedule= you can put either a timetable, a cron expression, a time delta object or a data set.
+~~~
+
+## 10.2 Dataset
+Dataset has two properties and the first one is the URI is like the path to the data, and the extra parameter is a decent dictionary that you can define.
 ![alt dataset](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/dataset.jpg)
 ~~~
 from airflow import Dataset
@@ -348,17 +359,20 @@ my_file = Dataset(
     )
 ~~~
 
-~~~
-# Schedule
-# before
-with DAG(schedule_interval='@daily')
 
-With DAG(timetable=MyTimeTable)
 
-# since 2.4
-with DAG(schedule=...)
-# in a schedule= you can put either a timetable, a cron expression, a time delta object or a data set.
-~~~
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### example 
 outlets= [my_file] indicates to Airflow that the corresponding task updates the dataset my_file. If a DAG has schedule=[my_file] then it gets triggered as soon as the task with outlets= [my_file] succeeds. Remeber that a dataset is just a pointer to a piece of data, here a file.
@@ -761,3 +775,19 @@ What view can you use to check if a modification you made is applied on your DAG
 * Code
 What view is best to get the history of the states of your DAG Runs and Tasks?
 * Grid
+
+## To see uploaded data into table in docker
+~~~
+docker-compose ps
+# Type name of the worker container
+docker exec -it docker-airflow-worker_1 /bin/bash
+# in docker container type (you got processed_user.csv)
+ls /tmp/
+
+# container name of database
+docker exec -it docker-airflow_postgres_1 /bin/bash/
+# in a container type
+psql -Uairflow
+# then
+select * from users;
+~~~
