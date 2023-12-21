@@ -359,8 +359,55 @@ my_file = Dataset(
     )
 ~~~
 
+### 10.3 @task decorators. Dataset update
+As we want to add task to data pipeline, we can use the task decorator type **from airflow.decorators import task**, the task decorator allows you to create python operator tasks in a much faster way.\
+To indicate airflow that this task update_dataset updates the dataset my_file.txt **@task(outlets=[my_file])**. It means that as soon as this task succeeds, well, the DAG that depends on this dataset my_file.txt will be automatically triggered.
+~~~
+# producer.py
+from airflow import DAG, Dataset
+from airflow.decorators import task
 
+from datetime import datetime
 
+my_file=Dataset('tmp/my_file.txt')
+
+with DAG(
+    dag_id='producer',
+    start_date=datetime(2023,12,1),
+    schedule='@daily',
+    catchup=False
+):
+    @task(outlets=[my_file])
+    def update_dataset():
+        with open('my_fil.uri', 'a+') as f:
+            f.write('producer updated')
+
+    update_dataset()
+~~~
+
+### 10.4 Triggered DAG
+**schedule=[my_file]** it means that as soon as the task in producer.py DAG update_dataset updates the Dataset my_file.txt that triggers the DAG consumer.py. So now your DAG is not scheduled based on time, but it is based on data updates.
+~~~
+from airflow import DAG, Dataset
+from airflow.decorators import task
+
+from datetime import datetime
+
+my_file=Dataset('/tmp/my_file.txt')
+
+with DAG(
+    dag_id='consumer',
+    schedule=[my_file],
+    start_date=datetime(2023,12,1),
+    catchup=False
+):
+    @task
+    def read_dataset():
+        with open(my_file.uri, 'r') as f:
+            print(f.read())
+    
+    read_dataset()
+~~~
 
 
 
