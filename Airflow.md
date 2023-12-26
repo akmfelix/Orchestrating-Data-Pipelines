@@ -732,8 +732,8 @@ This defines the maximum number of active DAG runs per DAG. By default, you can 
 
 
 
-==================================================================================================
-==================================================================================================
+================================================================
+================================================================
 # Airflow installation
 ## What-is-docker
 Docker is a software development platform and a kind of virtualization technology that makes it easy for us to develop and deploy apps inside packaged, virtual containerized environments, meaning apps run the same no matter where they are on what machine they are running on.\
@@ -754,20 +754,19 @@ First, make sure you have installed Docker Desktop and Visual Studio. If not, ta
 Docker needs privilege rights to work, make sure you have them.\
 
 ### Install Apache Airflow with Docker
-* Create a folder materials in your Documents
+* Create a folder 'materials' in your Documents
 * In this folder, download the following file: docker compose file
 * If you right-click on the file and save it, you will end up with docker-compose.yaml.txt. Remove the .txt and keep docker-compose.yaml
 * Open your terminal or CMD and go into Documents/materials
 * Open Visual Studio Code by typing the command: "code ."
 * Right click below docker-compose.yml and create a new file .env (don't forget the dot before env)
-* In this file add the following lines:
+* In this file add the following lines and save the file:
 ~~~
 AIRFLOW_IMAGE_NAME=apache/airflow:2.4.2
 AIRFLOW_UID=50000
 ~~~
-and save the file
 * Go at the top bar of Visual Studio Code -> Terminal -> New Terminal
-* n your new terminal at the bottom of Visual Studio Code, type the command "docker-compose up -d" and hit ENTER
+* In your new terminal at the bottom of Visual Studio Code, type the command "docker-compose up -d" and hit ENTER
 * You will see many lines scrolled, wait until it's done. Docker is downloading Airflow to run it. It can take up to 5 mins depending on your connection. If Docker raises an error saying it can't download the docker image, ensure you are not behind a proxy/vpn or corporate network. You may need to use your personal connection to make it work.
 * Open your web browser and go to "localhost:8080"
 
