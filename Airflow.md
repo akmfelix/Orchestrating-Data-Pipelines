@@ -411,76 +411,11 @@ with DAG(
     read_dataset()
 ~~~
 
-
-
-
-
-
-
-
-
-
-
-
-
-### example 
-outlets= [my_file] indicates to Airflow that the corresponding task updates the dataset my_file. If a DAG has schedule=[my_file] then it gets triggered as soon as the task with outlets= [my_file] succeeds. Remeber that a dataset is just a pointer to a piece of data, here a file.
+### 10.5 Many datasets
+Trigger consumer.py after producer.py
 ~~~
-## trigger consumer.py after producer.py
----------------------------------------
 # producer.py
 from airflow import DAG, Dataset
-# As we want to add task to this data pipeline, we can use the task decorator type.
-# task decorator allows you to create python operator tasks in a much faster way
-from airflow.decorators import task
-
-from datetime import datetime
-
-my_dataset = Dataset('/tmp/my_file.txt')
-
-with DAG(
-    dag_id='producer',
-    schedule='@daily',
-    start_date=datetime(2023,12,1),
-    catchup=False
-):
-# to indicate airflow that this task updates dataset
-    @task(outlets=[my_dataset])
-    def update_dataset():
-        with open(my_dataset.uri, 'a+') as f:
-            f.write('producer updated')
-
-    update_dataset()
-
----------------------------------------
-# consumer.py
-from airflow import DAG, Dataset
-from airflow.decorators import task
-
-from datetime import datetime
-
-my_dataset=Dataset('/tmp/my_file.txt')
-with DAG(
-    dag_id='consumer',
-    schedule=[my_dataset],
-    start_date=datetime(2023, 12, 1),
-    catchup=False
-):
-    @task
-    def read_dataset():
-        with open(my_dataset.uri, 'r') as f:
-            print(f.read())
-    read_dataset()
-~~~
-
-Many datasets
-~~~
-## trigger consumer.py after producer.py
----------------------------------------
-# producer.py
-from airflow import DAG, Dataset
-# As we want to add task to this data pipeline, we can use the task decorator type.
-# task decorator allows you to create python operator tasks in a much faster way
 from airflow.decorators import task
 
 from datetime import datetime
@@ -494,8 +429,7 @@ with DAG(
     start_date=datetime(2023,12,1),
     catchup=False
 ):
-# to indicate airflow that this task updates dataset
-    @task(outlets=[my_dataset])
+    @task(outlets=[my_dataset]) # to indicate airflow that this task updates dataset
     def update_dataset():
         with open(my_dataset.uri, 'a+') as f:
             f.write('producer updated')
@@ -531,7 +465,7 @@ with DAG(
 ~~~
 ![alt file-trigger](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/file_trigger.jpg)
 
-### Dataset trigger limitations
+### 10.6 Dataset trigger limitations
 Datasets are amazing, but they have limitations as well:
 * DAGs can only use Datasets in the same Airflow instance. A DAG cannot wait for a Dataset defined in another Airflow instance.
 * Consumer DAGs are triggered every time a task that updates datasets completes successfully. Airflow doesn't check whether the data has been effectively updated.
@@ -539,9 +473,9 @@ Datasets are amazing, but they have limitations as well:
 * If two tasks update the same dataset, as soon as one is done, that triggers the Consumer DAG immediately without waiting for the second task to complete.
 * Airflow monitors datasets only within the context of DAGs and Tasks. If an external tool updates the actual data represented by a Dataset, Airflow has no way of knowing that.
 
-# Databases and Executors
+# 11 Databases and Executors
 
-## Executor
+## 11.1 Executor
 Executor defines how to run your tasks on which system. And basically you have many different executors that you can use. They are local executors and remote executors.\
 \
 For example:
@@ -564,10 +498,8 @@ AIRFLOW__CORE__EXECUTOR: CeleryExecutor
 executor = SequentialExecutor
 ~~~
 
-### SequentialExecutor
+### 11.2 SequentialExecutor
 The sequential executor is the executor by default when you install airflow manually. \
-\
-How does it work?\
 \
 You have a web server, a scheduler and a database, a SQLite database. And if you want to run the following, DAG, the scheduler runs one task at a time. You are not able to run multiple tasks at the same time.\
 \
@@ -576,7 +508,7 @@ So for example, here it runs T1 one, then once T2 is completed, it runs to T3. T
 To configure this executor, you just need to modify the executor setting with the sequential executor value.
 ![alt SequentialExecutor](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/SequentialExecutor.jpg)
 
-### The Local executor
+### 11.3 The Local executor
 The local executor is one step further than the sequential executor, as it allows you to execute multiple tasks at the same time, but on a single machine. \
 \
 It means that you end up with the same airflow instance, but with a different database. In this time we are going to use either PostgreSQL, my SQL, Oracle DB or whatever you want, but not the SQL database. And by doing so you are able to execute multiple tasks at the same time.\
@@ -588,7 +520,7 @@ sql_alchemy_conn = postgresql+psycopg2://<user>:<password>@<host>/<db>
 ~~~
 * What is the main limitation of SQLite? It can accept only one writer at a time.
 
-### Celery executor
+### 11.4 Celery executor
 The Celery executor is nice to start sketching out the number of tasks that you can execute at the same time.\
 \
 How? By using a Celery cluster in order to execute your tasks on multiple machines.\
@@ -609,7 +541,7 @@ celery_result_backend=postgresql+psycopg2://<user>:<password>@<host>/<db>
 celery_broker_url=redis://:@redis:6379/0
 ~~~
 
-### parallel_dag.py
+### 11.5 parallel_dag.py
 
 ~~~
     from airflow import DAG
