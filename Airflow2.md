@@ -3,7 +3,7 @@
 \
 ![alt group_dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/group_dag.jpg)\
 \
-To do it we use SubDag.
+To group multiple tasks in to one we use SubDag.
 
 Before
 ~~~
@@ -57,7 +57,7 @@ with DAG(
 
     [download_a, download_b, download_c] >> check_files >> [transform_a, transform_b, transform_c]
 ~~~
-/ After
+\ After
 ~~~
 ## group_dag.py
 from airflow import DAG
@@ -103,8 +103,7 @@ with DAG(
 
     downloads >> check_files >> [transform_a, transform_b, transform_c]
 ~~~
-/
-
+\
 ~~~
 ## subdag_downloads.py
 from airflow import DAG
@@ -134,7 +133,9 @@ def subdag_downloads(parent_dag_id, child_dag_id, args):
         )
     return dag
 ~~~
-/
+
+## 7.2 TaskGroup
+
 
 ================================================================
 ================================================================
