@@ -62,7 +62,9 @@ To run Airflow in production, you are not going to stay with a single node archi
 Also keep in mind that you should have at least two Schedulers as well as two Web servers, maybe a Load balancer in front of your web servers to deal with the number of requests on the Airflow UI, as well as PGBouncer to deal with the number of connections that will be made to your meta database.
 ![alt multi-nodes-architecture](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/multi-nodes-architecture.jpg)
 
-# 3 Execution-Flow
+# 3 Airflow explanation
+
+## 3.1 Execution-Flow
 So you have one node with the components, the Web server, the Meta database, the Scheduler, the Executor, and the folder dags.\
 \
 First you create a new DAG, dag.py and you put that file into the folder DAGs. Next, the Scheduler parses this folder dags every five minutes by default to detect new DAGs. So you may need to wait up to five minutes before getting your DAG on the Airflow UI. Next, whenever you apply a modification to that DAG you may need to wait up to 30 seconds before getting your modification.\
@@ -71,13 +73,13 @@ Next, the Scheduler runs the DAG, and for that, it creates a DAG Run object with
 \
 If the DAG is done in that case, the DAG Run has the state Success. And basically you can update the Airflow UI to check the states of both the DAG Run and the task instances of that DAG Run.
 
-# 4 What should you keep in mind after what you've learned?
+## 3.2 What should you keep in mind after what you've learned?
 * Airflow is an orchestrator, not a processing framework. Process your gigabytes of data outside of Airflow (i.e. You have a Spark cluster, you use an operator to execute a Spark job, and the data is processed in Spark).
 * A DAG is a data pipeline, an Operator is a task.
 * An Executor defines how your tasks are executed, whereas a worker is a process executing your task
 * The Scheduler schedules your tasks, the web server serves the UI, and the database stores the metadata of Airflow.
 
-## 4.1 Questions
+## 3.3 Questions
 * What is a DAG: a collection of all the tasks you want to run, organised in a way that reflects their relationships and dependencies with no cycles.
 * What is the meaning of the schedule_interval property for a DAG: It defines how often a DAG should be run from the start_date+schedule_time.
 * What is an operator: an operator describes a single task in a workflow.
@@ -86,12 +88,12 @@ If the DAG is done in that case, the DAG Run has the state Success. And basicall
 ![alt what-is-dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-dag.jpg)
 ![alt what-is-workflow](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/what-is-workflow.jpg)
 
-# 5 Sensors
+## 3.4 Sensors
 A sense of wait for something to happen before moving to the next task.
 * poke_interval. which is defined to 60 seconds by default. So every 60 seconds sensors checks if the condition is true or not before executing the next task.
 * timeout. which is defined to 7 days by default. It tells in seconds when your sensor times out and fails.
  
-# 5.1 Sensors example
+### 3.4 Sensors example
 In this example, we want to verify if the API is available or not. And for that we use the HTTP sensor.\
 1. As usual, you need to create a new variable. In this case, is_api_available and you add the HTTP sensor in order to check if URL active or not.\
 2. Then you specify task_id, always specify the task_id as 'is_api_available' as well.\
@@ -106,7 +108,7 @@ In this example, we want to verify if the API is available or not. And for that 
     )
 ~~~
 
-## 6 Hook
+## 3.5 Hook
 With a airflow, you can interact with many tools and to make sure that it is easy for you to interact with the tool, there is the concept of Hook.\
 \
 Let's imagine that you have the operator and you want to execute a SQL request to a PostgreSQL database. With the PostgresOperator, you can execute a SQL request, but behind the scene a postgres HOOK is used and the goal of the PostgresHook is to obstruct all the complexity of interacting with a Postgres database.\
@@ -118,7 +120,7 @@ I strongly advise you to always take a look at the hook as you may have access t
 A hook allows you to easily interact with an external tool or an external service.\
 Keep in mind the method copy_expert doesn't exist from the PostgreOperator. You need to use the PostgresHook for that and that's why I always recommend you to take a look at the hook in order to see what methods you can use.
 
-## 7 DAG scheduling
+## 3.6 DAG scheduling
 * start_date: defines the date at which your DAG starts being scheduled.
 * schedule_interval: how often a DAG runs.
 * end_date: the timestamp from which a DAG ends.
@@ -126,11 +128,11 @@ Keep in mind the method copy_expert doesn't exist from the PostgreOperator. You 
 * Your DAG is effectively triggered after the start date or the last time your dag was triggered, plus the schedule_interval.
 ![alt dag_schedule](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/dag_schedule.jpg)
 
-## 8 Catchup/ Backfill mechanisms
+## 3.7 Catchup/ Backfill mechanisms
 * The catchup mechanism allows you to automatically run non trigger dag runs between the last time your DAG was triggered and the date of now.
 * The backfilling mechanism allows to run historical DAG runs.
 
-# 9 Task
+# 4 Task
 create_table -> is_api_available -> extract_user -> process_user -> store_user
 * Define a Data Pipeline
 * Execute a SQL request with the PostgresOperator
@@ -139,7 +141,7 @@ create_table -> is_api_available -> extract_user -> process_user -> store_user
 * Wait for something to happen with Sensors
 * Use Hooks to access secret methods
 * Exchange data between tasks
-### 9.1 Instantiate DAG object
+## 4.1 Instantiate DAG object
 with DAG
 ~~~
 from airflow import DAG
@@ -154,7 +156,7 @@ with DAG(
     None
 ~~~
 
-### 9.2 Create Table. SQL
+## 4.2 Create Table. SQL
 We are going to use the postgres operator in order to execute a SQL request against a database and create a table.\
 Whenever you want to use an operator, you need to import the corresponding operator and for the Postgres operator it is **from airflow.providers.postgres.operators.postgres import PostgresOperator**
 ~~~
@@ -176,7 +178,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
     )
 ~~~
 
-### 9.3 Sensors. HttpSensor
+## 4.3 Sensors. HttpSensor
 In this case, we want to verify if the API is available or not and for that we use the HTTP sensor.
 ~~~
 from airflow.providers.http.sensors.http import HttpSensor
@@ -188,7 +190,7 @@ from airflow.providers.http.sensors.http import HttpSensor
     )
 ~~~
 
-### 9.4 Extract data from API. SimpleHttpOperator
+## 4.4 Extract data from API. SimpleHttpOperator
 It's time to extract the data from API and for this we are going to use the SimpleHttpOperator.\
 method='GET' to request data.\
 response_filter=lambda response: json.loads(response.text) to extract data and transform it in json format. And for this we can define lambda, python function in a way that loads the response, the text into a json.\
@@ -206,7 +208,7 @@ import json
     )
 ~~~
 
-### 9.5 Process user. PythonOperator
+## 4.5 Process user. PythonOperator
 PythonOperator allows to use python operators
 ~~~
 from airflow.operators.python import PythonOperator
@@ -231,7 +233,7 @@ def _process_user(ti):
     )
 ~~~
 
-### 9.6 Store procced user. PostgresHook
+## 4.6 Store procced user. PostgresHook
 A hook allows you to easily interact with an external tool or an external service.
 ~~~
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -249,7 +251,7 @@ def _store_user():
     )
 ~~~
 
-### 9.7 The whole code
+## 4.7 The whole code
 ~~~
 from airflow import DAG
 from datetime import datetime
@@ -332,8 +334,8 @@ with DAG(
     extract_user >> process_user
 ~~~
 
-# 10 New AIRFLOW feature of scheduling
-# 10.1 New way of SCheduling
+# 5 New AIRFLOW feature of scheduling
+## 5.1 New way of Scheduling
 Before Airflow ver 2 'TriggerDag operator or the external tasks sensor, the TriggerDag one operator allows you to trigger knows or DAG from a DAG, whereas the external task sensor allows you to wait for a task in another DAG before moving forward. That being said, those two operators are pretty complex to use.'\
 After Airflow ver 2. With a new way of scheduling your DAGs, it's much easier to wait for data to exist in order to trigger another DAG.\
 When you make an update to a dataset to some data from a DAG that triggers another DAG. 
@@ -350,7 +352,7 @@ with DAG(schedule=mydataset)
 # in a schedule= you can put either a timetable, a cron expression, a time delta object or a data set.
 ~~~
 
-## 10.2 Dataset
+## 5.2 Dataset
 Dataset has two properties and the first one is the URI is like the path to the data, and the extra parameter is a decent dictionary that you can define.
 ![alt dataset](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/dataset.jpg)
 ~~~
@@ -361,7 +363,7 @@ my_file = Dataset(
     )
 ~~~
 
-### 10.3 @task decorators. Dataset update
+## 5.3 @task decorators. Dataset update
 As we want to add task to data pipeline, we can use the task decorator type **from airflow.decorators import task**, the task decorator allows you to create python operator tasks in a much faster way.\
 To indicate airflow that this task update_dataset updates the dataset my_file.txt **@task(outlets=[my_file])**. It means that as soon as this task succeeds, well, the DAG that depends on this dataset my_file.txt will be automatically triggered.
 ~~~
@@ -387,7 +389,7 @@ with DAG(
     update_dataset()
 ~~~
 
-### 10.4 Triggered DAG
+## 5.4 Triggered DAG
 **schedule=[my_file]** it means that as soon as the task in producer.py DAG update_dataset updates the Dataset my_file.txt that triggers the DAG consumer.py. So now your DAG is not scheduled based on time, but it is based on data updates.
 ~~~
 from airflow import DAG, Dataset
@@ -411,7 +413,7 @@ with DAG(
     read_dataset()
 ~~~
 
-### 10.5 Many datasets
+## 5.5 Many datasets
 Trigger consumer.py after producer.py
 ~~~
 # producer.py
@@ -465,7 +467,7 @@ with DAG(
 ~~~
 ![alt file-trigger](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/file_trigger.jpg)
 
-### 10.6 Dataset trigger limitations
+## 5.6 Dataset trigger limitations
 Datasets are amazing, but they have limitations as well:
 * DAGs can only use Datasets in the same Airflow instance. A DAG cannot wait for a Dataset defined in another Airflow instance.
 * Consumer DAGs are triggered every time a task that updates datasets completes successfully. Airflow doesn't check whether the data has been effectively updated.
@@ -473,9 +475,9 @@ Datasets are amazing, but they have limitations as well:
 * If two tasks update the same dataset, as soon as one is done, that triggers the Consumer DAG immediately without waiting for the second task to complete.
 * Airflow monitors datasets only within the context of DAGs and Tasks. If an external tool updates the actual data represented by a Dataset, Airflow has no way of knowing that.
 
-# 11 Databases and Executors
+# 6 Databases and Executors
 
-## 11.1 Executor
+## 6.1 Executor
 Executor defines how to run your tasks on which system. And basically you have many different executors that you can use. They are local executors and remote executors.\
 \
 For example:
@@ -498,7 +500,7 @@ AIRFLOW__CORE__EXECUTOR: CeleryExecutor
 executor = SequentialExecutor
 ~~~
 
-### 11.2 SequentialExecutor
+## 6.2 SequentialExecutor
 The sequential executor is the executor by default when you install airflow manually. \
 \
 You have a web server, a scheduler and a database, a SQLite database. And if you want to run the following, DAG, the scheduler runs one task at a time. You are not able to run multiple tasks at the same time.\
@@ -508,7 +510,7 @@ So for example, here it runs T1 one, then once T2 is completed, it runs to T3. T
 To configure this executor, you just need to modify the executor setting with the sequential executor value.
 ![alt SequentialExecutor](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/SequentialExecutor.jpg)
 
-### 11.3 The Local executor
+## 6.3 The Local executor
 The local executor is one step further than the sequential executor, as it allows you to execute multiple tasks at the same time, but on a single machine. \
 \
 It means that you end up with the same airflow instance, but with a different database. In this time we are going to use either PostgreSQL, my SQL, Oracle DB or whatever you want, but not the SQL database. And by doing so you are able to execute multiple tasks at the same time.\
@@ -520,7 +522,7 @@ sql_alchemy_conn = postgresql+psycopg2://<user>:<password>@<host>/<db>
 ~~~
 * What is the main limitation of SQLite? It can accept only one writer at a time.
 
-### 11.4 Celery executor
+## 6.4 Celery executor
 The Celery executor is nice to start sketching out the number of tasks that you can execute at the same time.\
 \
 How? By using a Celery cluster in order to execute your tasks on multiple machines.\
@@ -541,7 +543,7 @@ celery_result_backend=postgresql+psycopg2://<user>:<password>@<host>/<db>
 celery_broker_url=redis://:@redis:6379/0
 ~~~
 
-### 11.5 parallel_dag.py
+## 6.5 parallel_dag.py
 
 ~~~
     from airflow import DAG
