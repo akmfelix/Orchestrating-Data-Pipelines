@@ -1,5 +1,5 @@
 # 7 Implementing Advanced Concepts in Airflow
-Group mu;tiple Tasks in to one Task - if tasks do same thing./
+Group mu;tiple Tasks in to one Task - if tasks do same thing. /
 /
 ![alt group_dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/group_dag.jpg)/
 /
