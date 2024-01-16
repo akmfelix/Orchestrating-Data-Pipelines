@@ -493,6 +493,11 @@ To copy the configuration file of airflow from the container to the host to your
 docker cp docker-airflow-airflow-scheduler-1:/opt/airflow/airflow.cfg .
 ~~~
 
+To restart airflow
+~~~
+docker-compose down && docker-compose up -d
+~~~
+
 We have this environment variable with the CeleryExecutor, this overrides the value of the SequentialExecutor corresponding to the parameter executor.
 ~~~
 in airflow.cfg and docker-compose.yaml
@@ -541,10 +546,49 @@ executor = CeleryExecutor
 sql_alchemy_conn=postgresql+psycopg2://<user>:<password>@<host>/<db>
 celery_result_backend=postgresql+psycopg2://<user>:<password>@<host>/<db>
 celery_broker_url=redis://:@redis:6379/0
+
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    # For backward compatibility, with Airflow <2.3
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+
+  redis:
+    image: redis:latest
+    expose:
+      - 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    restart: always
+
+  airflow-worker:
+    <<: *airflow-common
+    command: celery worker
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    environment:
+      <<: *airflow-common-env
+      # Required to handle warm shutdown of the celery workers properly
+      # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
+      DUMB_INIT_SETSID: "0"
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    
 ~~~
 
 ## 6.5 parallel_dag.py
-
 ~~~
     from airflow import DAG
     from airflow.operators.bash import BashOperator
@@ -584,47 +628,24 @@ celery_broker_url=redis://:@redis:6379/0
         [load_a, load_b] >> transform
 ~~~
 
-## Flower
+## 6.6 Flower
+To monitor tasks on dashboard. 
 ~~~
+localhost:5555
 docker-compose --profile flower up -d
 ~~~
 
-## Remove DAG examples
+## 6.6 Remove DAG examples
 * Open the file docker-compose.yaml
 * Replace the value 'true' by 'false' for the AIRFLOW__CORE__LOAD_EXAMPLES environment variables
 * Restart Airflow by typing **docker-compose down** && **docker-compose up -d**
 * Once it's done, go back to localhost:8080
 
-## What is a ques
+## 6.6 What is a ques
 With queues you are able to distribute your tasks among multiple machines according to the specificities of your tasks and your machines.
 ![alt ques](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/ques.jpg)
 
-## Add a new Celery Worker
-~~~
-# add in docker-compose.yaml
-  airflow-worker-2:
-    <<: *airflow-common
-    command: celery worker
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    environment:
-      <<: *airflow-common-env
-      # Required to handle warm shutdown of the celery workers properly
-      # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
-      DUMB_INIT_SETSID: "0"
-    restart: always
-    depends_on:
-      <<: *airflow-common-depends-on
-      airflow-init:
-        condition: service_completed_successfully   
-~~~
-
-## Creating a new queue
+## 6.7 Creating a new queue
 Creating a queue in airflow is very simple. You just need to specify to the command cell.\
 For exxample: celery worker -q for_example
 
@@ -635,13 +656,19 @@ For exxample: celery worker -q for_example
   ...
 ~~~
 
-## Send a task to specific queue
+## 6.8 Send a task to specific queue
+Sending tasks to Multiple workers.\
+\
+Creating a queue in airflow: need to specify to the **command: celery worker -q ml_model**. By doing this you will be able to execute that task ml_model only on this specipic worker.\
+\
+Other tasks will be directed to default worker.
+
 Add paramater to a task queue='for_example'
 ~~~
 ...
     transform = BashOperator(
         task_id='transform',
-        queue='high_cpu',
+        queue='ml_model',
         bash_command='sleep 1'
     )
 ...
