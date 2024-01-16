@@ -1,11 +1,11 @@
 # 7 Implementing Advanced Concepts in Airflow
-Group mu;tiple Tasks in to one Task - if tasks do same thing. /
+## 7.1 Group multiple Tasks in to one Task
 /
 ![alt group_dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/group_dag.jpg)/
 /
 To do it we use SubDag.
 
-To group showed tasks in to one.
+Before
 ~~~
 from airflow import DAG
 from airflow.operators.bash import BashOperator
@@ -57,18 +57,66 @@ with DAG(
 
     [download_a, download_b, download_c] >> check_files >> [transform_a, transform_b, transform_c]
 ~~~
-/
+/ After
 ~~~
+## group_dag.py
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.operators.subdag import SubDagOperator
+from sub_dags.subdag_downloads import subdag_downloads
+
+from datetime import datetime
+
+with DAG(
+    dag_id='group_dag',
+    start_date=datetime(2024,1,1),
+    schedule_interval='@daily',
+    catchup=False
+) as dag:
+    
+    args = {'start_date':dag.start_date, 'schedule_interval':dag.schedule_interval, 'catchup':dag.catchup}
+
+    downloads=SubDagOperator(
+        task_id='downloads',
+        subdag=subdag_downloads(dag.dag_id, 'downloads', args)
+    )
+
+    check_files=BashOperator(
+        task_id='check_files',
+        bash_command='sleep 10'
+    )
+
+    transform_a=BashOperator(
+        task_id='transform_a',
+        bash_command='sleep 10'
+    )
+
+    transform_b=BashOperator(
+        task_id='transform_b',
+        bash_command='sleep 10'
+    )
+
+    transform_c=BashOperator(
+        task_id='transform_c',
+        bash_command='sleep 10'
+    )
+
+    downloads >> check_files >> [transform_a, transform_b, transform_c]
+~~~
+/
+
+~~~
+## subdag_downloads.py
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 
-def subdag_downlods(parent_dag_id, child_dag_id, args):
+def subdag_downloads(parent_dag_id, child_dag_id, args):
 
     with DAG(
         f"{parent_dag_id}.{child_dag_id}",
-        start_date=['start_date'],
-        schedule=['schedule'],
-        catchip=args['catchup']
+        start_date=args['start_date'],
+        schedule_interval=args['schedule_interval'],
+        catchup=args['catchup']
     ) as dag:
         download_a=BashOperator(
             task_id='download_a',
@@ -85,52 +133,6 @@ def subdag_downlods(parent_dag_id, child_dag_id, args):
             bash_command='sleep 10'
         )
     return dag
-~~~
-/
-
-~~~
-from airflow import DAG
-from airflow.operators.bash import BashOperator
-from airflow.operators.subdag import SubDagOperator
-from subdags.subdag_downloads import subdag_downloads
-
-from datetime import datetime
-
-with DAG(
-    dag_id='group_dag',
-    start_date=datetime(2024,1,1),
-    schedule='daily',
-    catchup=False
-) as dag:
-    
-    args = {'start_date':dag.start_date, 'schedule':dag.schedule, 'catchup':dag.catchup}
-
-    downloads=SubDagOperator(
-        taskid='downloads',
-        subdag=subdag_downloads(dag.dag_id, 'downloads', args)
-    )
-
-    check_files=BashOperator(
-        task_id='check_files',
-        bash_command='sleep 10'
-    )
-
-    transform_a=BashOperator(
-        task_id='transform a',
-        bash_command='sleep 10'
-    )
-
-    transform_b=BashOperator(
-        task_id='transform b',
-        bash_command='sleep 10'
-    )
-
-    transform_c=BashOperator(
-        task_id='transform c',
-        bash_command='sleep 10'
-    )
-
-    downloads >> check_files >> [transform_a, transform_b, transform_c]
 ~~~
 /
 
