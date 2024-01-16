@@ -675,12 +675,10 @@ Add paramater to a task queue='for_example'
 ~~~
 You are able to add a new celery worker, you are able to create a queue and attach that queue to a specific worker, which is very useful if you have a resource consuming task that you want to send to a specific worker with more resources than the others.
 
-## Concurrency, the parameters you must know!
-Airflow has several parameters to tune your tasks and DAGs concurrency.\
-\
+## 6.9 Concurrency
 Concurrency defines the number of tasks and DAG Runs that you can execute at the same time (in parallel)\
 \
-*Starting from the configuration settings*/
+Starting from the configuration settings/
 **parallelism / AIRFLOW__CORE__PARALELISM**/
 This defines the maximum number of task instances that can run in Airflow per scheduler. By default, you can execute up to 32 tasks at the same time. If you have 2 schedulers: 2 x 32 = 64 tasks.What value to define here depends on the resources you have and the number of schedulers running./
 /
@@ -690,7 +688,138 @@ This defines the maximum number of task instances allowed to run concurrently in
 **max_active_runs_per_dag / AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG**/
 This defines the maximum number of active DAG runs per DAG. By default, you can have up to 16 DAG runs per DAG running at the same time.
 
+# 7 Implementing Advanced Concepts in Airflow
+Group mu;tiple Tasks in to one Task - if tasks do same thing./
+![alt group_dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/group_dag.jpg)
+To do it we use SubDag.
 
+To group showed tasks in to one.
+~~~
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.operators.subdag import SubDagOperator
+
+from datetime import datetime
+
+with DAG(
+    dag_id='group_dag',
+    start_date=datetime(2024,1,1),
+    schedule='daily',
+    catchup=False
+) as dag:
+    
+    download_a=BashOperator(
+        task_id='download_a',
+        bash_command='sleep 10'
+    )
+
+    download_b=BashOperator(
+        task_id='download_b',
+        bash_command='sleep 10'
+    )
+
+    download_c=BashOperator(
+        task_id='download_c',
+        bash_command='sleep 10'
+    )
+
+    check_files=BashOperator(
+        task_id='check_files',
+        bash_command='sleep 10'
+    )
+
+    transform_a=BashOperator(
+        task_id='transform a'
+        bash_command='sleep 10'
+    )
+
+    transform_b=BashOperator(
+        task_id='transform b'
+        bash_command='sleep 10'
+    )
+
+    transform_c=BashOperator(
+        task_id='transform c'
+        bash_command='sleep 10'
+    )
+
+    [download_a, download_b, download_c] >> check_files >> [transform_a, transform_b, transform_c]
+~~~
+
+~~~
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+
+def subdag_downlods(parent_dag_id, child_dag_id, args):
+
+    with DAG(
+        f"{parent_dag_id}.{child_dag_id}",
+        start_date=['start_date'],
+        schedule=['schedule'],
+        catchip=args['catchup']
+    ) as dag:
+        download_a=BashOperator(
+            task_id='download_a',
+            bash_command='sleep 10'
+        )
+
+        download_b=BashOperator(
+            task_id='download_b',
+            bash_command='sleep 10'
+        )
+
+        download_c=BashOperator(
+            task_id='download_c',
+            bash_command='sleep 10'
+        )
+    return dag
+~~~
+
+
+~~~
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.operators.subdag import SubDagOperator
+from subdags.subdag_downloads import subdag_downloads
+
+from datetime import datetime
+
+with DAG(
+    dag_id='group_dag',
+    start_date=datetime(2024,1,1),
+    schedule='daily',
+    catchup=False
+) as dag:
+    
+    args = {'start_date':dag.start_date, 'schedule':dag.schedule, 'catchup':dag.catchup}
+
+    downloads=SubDagOperator(
+        taskid='downloads',
+        subdag=subdag_downloads(dag.dag_id, 'downloads', args)
+    )
+
+    check_files=BashOperator(
+        task_id='check_files',
+        bash_command='sleep 10'
+    )
+
+    transform_a=BashOperator(
+        task_id='transform a',
+        bash_command='sleep 10'
+    )
+
+    transform_b=BashOperator(
+        task_id='transform b',
+        bash_command='sleep 10'
+    )
+
+    transform_c=BashOperator(
+        task_id='transform c',
+        bash_command='sleep 10'
+    )
+
+    downloads >> check_files >> [transform_a, transform_b, transform_c]
+~~~
 
 
 ================================================================
