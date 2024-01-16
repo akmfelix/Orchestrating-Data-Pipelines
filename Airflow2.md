@@ -1,8 +1,8 @@
 # 7 Implementing Advanced Concepts in Airflow
 ## 7.1 Group multiple Tasks in to one Task
-/
-![alt group_dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/group_dag.jpg)/
-/
+\
+![alt group_dag](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/group_dag.jpg)\
+\
 To do it we use SubDag.
 
 Before
