@@ -221,6 +221,166 @@ def transform_tasks():
 
     return group
 ~~~
+
+## 7.3 XCOM
+xcom: 'Cross Communication', allows to exchange SMALL amount of data.\
+\
+The X Come contains the information you want to share between your tasks and it is stored into the meta database of airflow.\
+\
+### 7.3.1 Share data between tasks
+1. by a return value of python function
+2. xcom_method
+
+### 1 method
+~~~
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+
+from datetime import datetime
+
+def _t1():
+    return 55
+
+def _t2():
+    None
+
+with DAG(
+    dag_id='xcom_dag',
+    start_date=datetime(2024,1,1),
+    schedule_interval='@daily',
+    catchup=False
+) as dag:
+    
+    t1 = PythonOperator(
+        task_id='t1',
+        python_callable=_t1
+    )
+
+    t2 = PythonOperator(
+        task_id='t2',
+        python_callable=_t2
+    )
+
+    t3 = BashOperator(
+        task_id='t3',
+        bash_command="echo ''"
+    )
+
+    t1 >> t2 >> t3
+~~~
+
+### 2 method
+* use parameter **ti** - t is the task instance object of your task allowing you to access the method xcom_push.
+* **ti.xcom_push** - to push the value that you want to store in the metadatabase that you want to share.
+* next, specify key: **key='my_key'** and the value **value=42**
+* the good thing with xcom_push - you can define the unique key
+* to pull back to your code the xcom from the task t1 into t2 - **ti.xcom_pull(key='my_key', task_ids='t1')**
+* By doing this you are able to push xcom from t1 one and get it back from t2.
+~~~
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+
+from datetime import datetime
+
+def _t1(ti):
+    ti.xcom_push(key='my_key', value=55)
+
+def _t2(ti):
+    print(ti.xcom_pull(key='my_key', task_ids='t1'))
+
+with DAG(
+    dag_id='xcom_dag',
+    start_date=datetime(2024,1,1),
+    schedule_interval='@daily',
+    catchup=False
+) as dag:
+    
+    t1 = PythonOperator(
+        task_id='t1',
+        python_callable=_t1
+    )
+
+    t2 = PythonOperator(
+        task_id='t2',
+        python_callable=_t2
+    )
+
+    t3 = BashOperator(
+        task_id='t3',
+        bash_command="echo ''"
+    )
+
+    t1 >> t2 >> t3
+~~~
+
+## 7.4 Branch Operators
+A very common use case in airflow is to choose one task or another according to a condition. And for that you have the branch operators.\
+\
+In this task, you have a condition and based on the output of that condition, you return a task ID or an order that corresponds to the next task to execute.\
+\
+So for example, you may have a condition that returns true, and if it is the case, then you want to execute task A. And if that condition returns false, then you want to execute task C.
+![alt branch_operator](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/branch_operator.jpg)\
+\
+The branch operator has a condition based on the output of that condition. You return one task ID or another.
+* **from airflow.operators.python import BranchPythonOperator** - allows you to execute a python function and in that python function you returns the task ID of the next task you want to execute based on your condition.
+* Pushed by t1 to the variable value, we can make the condition. So if value is equal to 55, we want to execute the task t2, so we return the task id t2 and if not, then we want to execute the task t3.
+* **if value==55:**
+* put tasks accordingly **t1 >> branch >> [t2,t3]**
+~~~
+from airflow import DAG
+from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.bash import BashOperator
+
+from datetime import datetime
+
+def _t1(ti):
+    ti.xcom_push(key='my_key2', value=55)
+
+def _t2(ti):
+    ti.xcom_pull(key='my_key2', task_ids='t1')    
+
+def _branch(ti):
+    value = ti.xcom_pull(key='my_key2', task_ids='t1')
+    if (value==55):
+        return 't2'
+    return 't3'
+
+with DAG(
+    dag_id='xcom2',
+    start_date=datetime(2024,1,1),
+    schedule_interval='@daily',
+    catchup=False
+) as DAG:
+    
+    t1=PythonOperator(
+        task_id='t1',
+        python_callable=_t1
+    )
+
+    branch = BranchPythonOperator(
+        task_id='branch',
+        python_callable=_branch
+    )
+
+    t2=PythonOperator(
+        task_id='t2',
+        python_callable=_t2
+    )
+
+    t3=BashOperator(
+        task_id='t3',
+        bash_command="echo ''"
+    )
+
+    t1 >> branch >> [t2,t3]
+~~~
+## 7.5 After BranchPythonOperator execution
+To avoid skipping t4:
+![alt after_branch_exe](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/after_branch_exe.jpg)\
+
+
 ================================================================
 ================================================================
 # Airflow installation
