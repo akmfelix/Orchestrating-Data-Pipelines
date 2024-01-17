@@ -135,8 +135,92 @@ def subdag_downloads(parent_dag_id, child_dag_id, args):
 ~~~
 
 ## 7.2 TaskGroup
+New feature of grouping tasks
+~~~
+# task_group_task.py
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from datetime import datetime
+from groups.group_downloads import download_tasks
+from groups.group_transforms import transform_tasks
 
+with DAG(
+    dag_id='tasks_group_dag',
+    start_date=datetime(2024,1,1),
+    schedule_interval='@daily',
+    catchup=False
+) as dag:
+    args = {'start_date':dag.start_date, 'schedule_interval':dag.schedule_interval, 'catchup':dag.catchup}
 
+    downloads=download_tasks()
+
+    check_files=BashOperator(
+        task_id='check_files',
+        bash_command='sleep 10'
+    )
+
+    transforms=transform_tasks()
+
+    downloads>> check_files>> transforms
+~~~
+\
+~~~
+# group_downloads.py
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.utils.task_group import TaskGroup
+
+def download_tasks():
+
+    with TaskGroup(group_id='downloads', tooltip='Download tasks') as group:
+
+        download_a=BashOperator(
+            task_id='download_a',
+            bash_command='sleep 10'
+        )
+
+        download_b=BashOperator(
+            task_id='download_b',
+            bash_command='sleep 10'
+        )
+
+        download_c=BashOperator(
+            task_id='download_c',
+            bash_command='sleep 10'
+        )
+    return group
+
+~~~
+\
+~~~
+# group_transforms
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.utils.task_group import TaskGroup
+
+from datetime import datetime
+
+def transform_tasks():
+
+    with TaskGroup(group_id='transforms', tooltip='Transform tasks') as group:
+
+        transform_a=BashOperator(
+            task_id='transform_a',
+            bash_command='sleep 10'
+        )
+
+        transform_b=BashOperator(
+            task_id='transform_b',
+            bash_command='sleep 10'
+        )
+
+        transform_c=BashOperator(
+            task_id='transform_c',
+            bash_command='sleep 10'
+        )
+
+    return group
+~~~
 ================================================================
 ================================================================
 # Airflow installation
