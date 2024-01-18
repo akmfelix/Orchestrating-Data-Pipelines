@@ -379,8 +379,117 @@ with DAG(
 ## 7.5 After BranchPythonOperator execution
 To avoid skipping t4:
 ![alt after_branch_exe](https://github.com/akmfelix/Orchestrating-Data-Pipelines/blob/main/img/after_branch_exe.jpg)\
+~~~
+    t4=BashOperator(
+        task_id='t4',
+        bash_command="echo ''",
+        #trigger_rule='none_failed_min_one_success'
+        trigger_rule='none_failed_min_one_success'
+    )
+~~~
+# 9 Creating Airflow plugin with Elasticsearch and PostgreSQL
+* How to extend features and functionalities
+* How the plugin system works
+* How to create your own operator
 
+## 9.1 Elasticsearch
+Elasticsearch is a search engine for your data. Basically, you are able to search, analyze and visualize your data and what you are looking for in your data.
+* Kibana - user interface of Elasticsearch
+* Elasticsearch - search engine 
+* Lock stash - allows to fetch data from different sources
 
+## 9.2 Running Elasticsearch
+* docker-compose-es.yaml
+* To verify that you can interact with the Elasticsearch Docker container from your airflow containers.
+~~~
+# in a terminal window
+docker-compose -f docker-compose-es.yaml up -d
+docker-compose -f docker-compose-es.yaml ps
+docker exec -it docker-airflow-airflow-scheduler-1 /bin/bash
+curl -X GET 'http://elastic:9200'
+~~~
+
+## 9.3 Create own Plugin
+* Create connection (elastic_default, HTTP, elastic, 9200)
+* And as we want to interact with Elasticsearch, we need to create a hook. Remember that the hook allows you to interact with an external tool or an external service.
+* Create folder plugins->hook->elastic and in the folder elastic create file elastic_hook.py
+* create elastic_hook
+~~~
+from airflow.plugins_manager import AirflowPlugin
+from airflow.hooks.base import BaseHook
+
+from elasticsearch import Elasticsearch
+
+class ElasticHook(BaseHook):
+
+    def __init__(self, conn_id='elastic_default', *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        conn = self.get_connection(conn_id)
+
+        conn_config = {}
+        hosts = []
+
+        if conn.host:
+            hosts = conn.host.split(',')
+        if conn.port:
+            conn_config['port'] = int(conn.port)
+        if conn.login:
+            conn_config['http_auth'] = (conn.login, conn.password)
+
+        self.es = Elasticsearch(hosts, **conn_config)
+        self.index = conn.schema
+
+    def info(self):
+        return self.es.info()
+
+    def set_index(self, index):
+        self.index = index
+
+    def add_doc(self, index, doc_type, doc):
+        self.set_index(index)
+        res = self.es.index(index=index, doc_type=doc_type, doc=doc)
+        return res
+
+class AirflowElasticPlugin(AirflowPlugin):
+    name='elastic'
+    hooks = [ElasticHook]
+~~~
+* add plugin to Airflow
+~~~
+class AirflowElasticPlugin(AirflowPlugin):
+    name='elastic'
+    hooks = [ElasticHook]
+
+# then restart airflow
+docker-compose -f docker-compose-es.yaml stop
+docker-compose -f docker-compose-es.yaml up -d
+docker exec -it docker-airflow-airflow-scheduler-1 /bin/bash
+airflow plugins
+~~~
+
+~~~
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from hooks.elastic.elastic_hook import ElasticHook
+
+from datetime import datetime
+
+def _print_es_info():
+    hook = ElasticHook()
+    print(hook.info())
+
+with DAG(
+    dag_id='elastic_dag',
+    start_date=datetime(2024,1,1),
+    schedule_interval='@daily',
+    catchup=False
+) as dag:
+    
+    print_es_info = PythonOperator(
+        task_id='print_es_info',
+        python_callable=_print_es_info
+    )
+~~~
 ================================================================
 ================================================================
 # Airflow installation
